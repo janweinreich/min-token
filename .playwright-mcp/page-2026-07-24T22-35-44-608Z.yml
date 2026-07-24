@@ -1,0 +1,43 @@
+- generic [active] [ref=f1e1]:
+  - main [ref=f1e2]:
+    - generic [ref=f1e3]:
+      - generic [ref=f1e4]: BudgetDarwin — the cheapest model that still answers well
+      - generic [ref=f1e5]: 0 learned rules
+      - generic [ref=f1e6]: 0 episodes
+    - generic [ref=f1e7]:
+      - generic [ref=f1e8]:
+        - generic [ref=f1e9]:
+          - paragraph [ref=f1e10]: "Ask these three in order:"
+          - list [ref=f1e11]:
+            - listitem [ref=f1e12]: a question → generates
+            - listitem [ref=f1e13]: a paraphrase → replays at 0 tokens
+            - listitem [ref=f1e14]: the Python variant → refuses to replay
+        - generic [ref=f1e15]:
+          - textbox "ask anything…" [ref=f1e16]
+          - button "ask" [disabled] [ref=f1e17]
+        - generic [ref=f1e18]:
+          - generic [ref=f1e19]:
+            - text: TRAINING MODE
+            - generic [ref=f1e20]: "OFF"
+          - button [ref=f1e21] [cursor=pointer]:
+            - text: "OFF"
+            - emphasis [ref=f1e22]: keyword router · free
+          - button [ref=f1e23] [cursor=pointer]:
+            - text: LEARNED RULES
+            - emphasis [ref=f1e24]: distilled table · free
+          - button [ref=f1e25] [cursor=pointer]:
+            - text: MODEL READS SKILL
+            - emphasis [ref=f1e26]: ~625 tok/request
+        - generic [ref=f1e27]:
+          - button "What package installs the Actian JavaScrip…" [ref=f1e28] [cursor=pointer]
+          - button "Which npm package do I need for Actian Vec…" [ref=f1e29] [cursor=pointer]
+          - button "How do I install the Actian Python SDK?" [ref=f1e30] [cursor=pointer]
+      - complementary [ref=f1e31]:
+        - heading "This request" [level=2] [ref=f1e32]
+        - paragraph [ref=f1e33]: Ask something to see the comparison.
+        - heading "This session" [level=2] [ref=f1e34]
+        - paragraph [ref=f1e35]: —
+        - heading "How it saved" [level=2] [ref=f1e36]
+        - paragraph [ref=f1e37]: —
+        - button "show the evidence" [ref=f1e38] [cursor=pointer]
+  - alert [ref=f1e39]

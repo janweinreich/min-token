@@ -43,12 +43,19 @@ export const MEASURED = {
   strongTokens: 15291,
   leanTokens: 6619,
   cases: 20,
+  /**
+   * Cost of the always-strong baseline PER CASE, at Pioneer's published
+   * claude-sonnet-5 rate ($2/$10 per MTok) on the measured 765-token average
+   * with the measured 62/38 input/output split from the benchmark run.
+   * Stated as a rate, not a guess, so the saving figure is auditable.
+   */
+  strongCostPerCase: (765 * 0.62 * 2 + 765 * 0.38 * 10) / 1_000_000,
 };
 
 export interface Agent {
   deps: PipelineDeps;
   episodes: RoutingEpisode[];
-  session: { asks: number; spent: number; avoidedEst: number; replays: number };
+  session: { asks: number; spent: number; avoidedEst: number; replays: number; costUsd: number; avoidedUsdEst: number };
   /** How many of the episodes came from the committed measurement, not this session. */
   seeded: number;
   ready: Promise<void>;
@@ -117,7 +124,7 @@ function build(): Agent {
       episodes: [],
     },
     episodes: [],
-    session: { asks: 0, spent: 0, avoidedEst: 0, replays: 0 },
+    session: { asks: 0, spent: 0, avoidedEst: 0, replays: 0, costUsd: 0, avoidedUsdEst: 0 },
     seeded: 0,
     ready: Promise.resolve(),
   };
@@ -355,9 +362,14 @@ export async function handle(question: string, autoApprove: boolean, mode: Route
   // number is the committed benchmark comparison.
   const strongEst = MEASURED.strongTokensPerCase;
 
+  const spentUsd = r.usage.estimatedCostUsd ?? 0;
+  const baselineUsd = MEASURED.strongCostPerCase;
+
   a.session.asks++;
   a.session.spent += spent;
   a.session.avoidedEst += Math.max(0, strongEst - spent);
+  a.session.costUsd += spentUsd;
+  a.session.avoidedUsdEst += Math.max(0, baselineUsd - spentUsd);
   if (replayed) a.session.replays++;
 
   if (!replayed && r.routing) {
@@ -425,6 +437,18 @@ export async function handle(question: string, autoApprove: boolean, mode: Route
     ...r,
     tools,
     strongEstimate: strongEst,
+    // The comparison the whole product is about, computed server-side so the
+    // UI cannot quietly change the arithmetic behind a headline number.
+    savings: {
+      tokensUsed: spent,
+      tokensBaseline: strongEst,
+      tokensSaved: Math.max(0, strongEst - spent),
+      usdUsed: spentUsd,
+      usdBaseline: baselineUsd,
+      usdSaved: Math.max(0, baselineUsd - spentUsd),
+      pct: strongEst > 0 ? Math.round(((strongEst - spent) / strongEst) * 100) : 0,
+      baselineModel: "claude-sonnet-5",
+    },
     session: a.session,
     learned: learned(a),
     measured: MEASURED,

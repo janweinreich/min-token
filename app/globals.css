@@ -165,3 +165,175 @@ button.mode:disabled { opacity: 0.5; cursor: default; }
   color: #ddd6fe;
 }
 .llmrouted b { color: #c4b5fd; }
+
+
+/* ── redesigned panel: the saving is the headline, evidence is behind a toggle ── */
+
+.panel h2 {
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin: 20px 0 8px;
+  font-weight: 600;
+}
+.panel h2:first-child { margin-top: 0; }
+
+.bigrow { display: flex; align-items: center; gap: 12px; }
+.big { display: flex; flex-direction: column; }
+.big .n { font-size: 34px; font-weight: 700; color: #e2e8f0; line-height: 1.05; }
+.big .l { font-size: 11px; color: #64748b; margin-top: 2px; }
+.big.muted .n { color: #475569; font-weight: 600; }
+.vs { color: #475569; font-size: 12px; padding-top: 12px; }
+
+.saveband {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #052e1a;
+  border: 1px solid #166534;
+  color: #86efac;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.saveband b { color: #4ade80; }
+.saveband .pct {
+  margin-left: auto;
+  font-size: 17px;
+  font-weight: 700;
+  color: #4ade80;
+}
+.saveband.none {
+  background: #1e293b;
+  border-color: #334155;
+  color: #94a3b8;
+}
+
+.costrow {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+.costrow b { color: #e2e8f0; }
+
+/* NOT .est — that is a small uppercase badge elsewhere, and inheriting its
+   text-transform rendered this whole sentence in shouting capitals. */
+.panel .basis {
+  margin-top: 8px;
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: #64748b;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.sess { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 8px; }
+.sess > div { display: flex; flex-direction: column; }
+.sess .n { font-size: 19px; font-weight: 700; color: #e2e8f0; }
+.sess .n.good { color: #4ade80; }
+.sess .l { font-size: 10.5px; color: #64748b; }
+
+ul.how { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 7px; }
+ul.how li { font-size: 12px; line-height: 1.45; color: #cbd5e1; }
+ul.how b:first-child {
+  display: inline-block;
+  min-width: 62px;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.learned { color: #ddd6fe; }
+.learned b { color: #c4b5fd; }
+
+button.disclose {
+  margin-top: 18px;
+  width: 100%;
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  border-radius: 6px;
+  padding: 7px;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+button.disclose:hover { background: #263449; color: #cbd5e1; }
+
+.detail { margin-top: 14px; border-top: 1px solid #1e293b; padding-top: 12px; }
+.detail h3 {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #64748b;
+  margin: 14px 0 6px;
+  font-weight: 600;
+}
+.detail h3:first-child { margin-top: 0; }
+button.link {
+  background: none; border: none; color: #38bdf8;
+  font-size: 10.5px; cursor: pointer; padding: 0; text-decoration: underline;
+}
+
+/* ── training mode: state legible at a glance ── */
+.modes {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  margin: 10px 2px 0;
+  padding: 7px 9px;
+  border-radius: 7px;
+  border: 1px solid #334155;
+  background: #131c2e;
+  flex-wrap: wrap;
+}
+.modes.active { border-color: #a78bfa; background: #1c1633; }
+.modeLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  font-weight: 600;
+  padding-right: 4px;
+}
+.modeLabel b {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #334155;
+  color: #94a3b8;
+}
+.modes.active .modeLabel { color: #a78bfa; }
+.modes.active .modeLabel b { background: #7c3aed; color: #f5f3ff; }
+
+button.mode {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  border-radius: 5px;
+  padding: 5px 9px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  text-align: left;
+}
+button.mode em {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 9.5px;
+  color: #64748b;
+  letter-spacing: 0;
+}
+button.mode.on { background: #2e1065; border-color: #a78bfa; color: #f5f3ff; }
+button.mode.on em { color: #c4b5fd; }
+button.mode:disabled { opacity: 0.5; cursor: default; }

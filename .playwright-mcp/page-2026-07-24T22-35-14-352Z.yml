@@ -1,0 +1,41 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]: BudgetDarwin — the cheapest model that still answers well
+    - generic [ref=e5]: 0 learned rules
+    - generic [ref=e6]: 0 episodes
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - paragraph [ref=e10]: "Ask these three in order:"
+        - list [ref=e11]:
+          - listitem [ref=e12]: a question → generates
+          - listitem [ref=e13]: a paraphrase → replays at 0 tokens
+          - listitem [ref=e14]: the Python variant → refuses to replay
+      - generic [ref=e15]:
+        - textbox "ask anything…" [ref=e16]
+        - button "ask" [disabled] [ref=e17]
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - text: TRAINING MODE
+          - generic [ref=e20]: "OFF"
+        - button [ref=e21] [cursor=pointer]:
+          - text: "OFF"
+          - emphasis [ref=e22]: keyword router · free
+        - button [ref=e23] [cursor=pointer]:
+          - text: LEARNED RULES
+          - emphasis [ref=e24]: distilled table · free
+        - button [ref=e25] [cursor=pointer]:
+          - text: MODEL READS SKILL
+          - emphasis [ref=e26]: ~625 tok/request
+      - generic [ref=e27]:
+        - button "What package installs the Actian JavaScrip…" [ref=e28] [cursor=pointer]
+        - button "Which npm package do I need for Actian Vec…" [ref=e29] [cursor=pointer]
+        - button "How do I install the Actian Python SDK?" [ref=e30] [cursor=pointer]
+    - complementary [ref=e31]:
+      - heading "This request" [level=2] [ref=e32]
+      - paragraph [ref=e33]: Ask something to see the comparison.
+      - heading "This session" [level=2] [ref=e34]
+      - paragraph [ref=e35]: —
+      - heading "How it saved" [level=2] [ref=e36]
+      - paragraph [ref=e37]: —
+      - button "show the evidence" [ref=e38] [cursor=pointer]

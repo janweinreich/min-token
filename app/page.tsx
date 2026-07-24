@@ -10,28 +10,40 @@ interface Res {
   route: string;
   selectedModelId?: string;
   latencyMs: number;
-  usage: { totalGenerationTokens: number; inputTokens: number; outputTokens: number; routerTokens: number; localEmbeddingCalls: number };
+  usage: {
+    totalGenerationTokens: number;
+    inputTokens: number;
+    outputTokens: number;
+    routerTokens: number;
+    localEmbeddingCalls: number;
+    estimatedCostUsd?: number;
+  };
+  savings?: {
+    tokensUsed: number; tokensBaseline: number; tokensSaved: number;
+    usdUsed: number; usdBaseline: number; usdSaved: number;
+    pct: number; baselineModel: string;
+  };
   memory: { hit: boolean; kind?: string; similarity?: number; rejections: Rejection[] };
   routing?: { reasons: string[]; leanSuccessLCB: number; contextK: number; evidenceCoverage: number };
   llmRouting?: {
     model: string; reason: string; source: string; promptSource?: string;
     inputTokens: number; outputTokens: number; costUsd: number; latencyMs: number;
   };
-  routerModel?: string;
-  distilledRulesAvailable?: number;
-  routerPromptSynthesized?: boolean;
   citations: { sourceId: string }[];
   strongEstimate: number;
-  session: { asks: number; spent: number; avoidedEst: number; replays: number };
+  session: { asks: number; spent: number; avoidedEst: number; replays: number; costUsd: number; avoidedUsdEst: number };
   learned: Learned[];
   measured: {
-    routerQuality: number; strongQuality: number; leanQuality: number;
-    routerTokens: number; strongTokens: number; leanTokens: number;
-    leanTokensPerCase: number; strongTokensPerCase: number; cases: number;
+    routerQuality: number; strongQuality: number;
+    routerTokens: number; strongTokens: number;
+    strongTokensPerCase: number; cases: number;
   };
   episodeCount: number;
   seededEpisodes?: number;
   grounded?: boolean;
+  routerModel?: string;
+  distilledRulesAvailable?: number;
+  routerPromptSynthesized?: boolean;
   tools: { sponsor: string; what: string; live: boolean; detail: string }[];
   error?: string;
 }
@@ -51,27 +63,30 @@ const ROUTE_COLOR: Record<string, string> = {
   ABSTAIN: "#94a3b8",
 };
 
+const MODES = [
+  { id: "off" as const, label: "OFF", hint: "keyword router · free" },
+  { id: "learned" as const, label: "LEARNED RULES", hint: "distilled table · free" },
+  { id: "llm" as const, label: "MODEL READS SKILL", hint: "~625 tok/request" },
+];
+
+const usd = (n: number) => (n >= 0.01 ? `$${n.toFixed(3)}` : `$${n.toFixed(5)}`);
+
 export default function Page() {
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
   const [log, setLog] = useState<Array<{ q: string; r: Res }>>([]);
   const [skill, setSkill] = useState<string | null>(null);
-  // Training mode. `learned` applies the distilled rules as a lookup at zero
-  // tokens; `llm` pays a cheap model to read the same rules. Measured, the LLM
-  // variant loses 4,496 tokens over 8 questions — it is offered so the
-  // comparison is visible on stage, not because it wins.
+  const [showDetail, setShowDetail] = useState(false);
   const [routerMode, setRouterMode] = useState<"off" | "learned" | "llm">("off");
-  // Loaded on mount so a cold page already knows what the agent has learned,
-  // instead of reading its counts off a response that has not happened yet.
   const [status, setStatus] = useState<Partial<Res> | null>(null);
 
   useEffect(() => {
-    fetch("/api/status")
-      .then((r) => r.json())
-      .then(setStatus)
-      .catch(() => {});
+    fetch("/api/status").then((r) => r.json()).then(setStatus).catch(() => {});
   }, []);
+
   const last = log[log.length - 1]?.r;
+  const view = last ?? status;
+  const sv = last?.savings;
 
   async function send(question: string) {
     if (!question.trim() || busy) return;
@@ -85,36 +100,21 @@ export default function Page() {
       });
       const r = (await res.json()) as Res;
       setLog((l) => [...l, { q: question, r }]);
-      // The agent rewrote its own skill from the new evidence — pull it back so
-      // the change is visible the moment it happens.
       if (skill !== null) fetch("/api/skill").then((x) => x.text()).then(setSkill);
     } finally {
       setBusy(false);
     }
   }
 
-  const view = last ?? status;
-  const m = view?.measured;
-  const savedPct =
-    last && last.strongEstimate > 0
-      ? Math.round(((last.strongEstimate - last.usage.totalGenerationTokens) / last.strongEstimate) * 100)
-      : 0;
-
   return (
     <main>
       <header className="goal">
         <div>
-          <b>GOAL</b> minimize generation tokens <i>subject to</i> quality ≥ 0.90
+          <b>BudgetDarwin</b> <span className="dim">— the cheapest model that still answers well</span>
         </div>
         <div className="spacer" />
-        {m && (
-          <div className="measured">
-            measured benchmark ·{" "}
-            <span className="ok">router {m.routerQuality.toFixed(3)} / {m.routerTokens}</span> vs{" "}
-            <span className="dim">always-strong {m.strongQuality.toFixed(3)} / {m.strongTokens}</span>
-          </div>
-        )}
-        <div className="pill">policy v1 · {view?.episodeCount ?? 0} episodes</div>
+        <div className="pill">{view?.distilledRulesAvailable ?? 0} learned rules</div>
+        <div className="pill">{view?.episodeCount ?? 0} episodes</div>
       </header>
 
       <div className="cols">
@@ -122,7 +122,7 @@ export default function Page() {
         <section className="chat">
           {log.length === 0 && (
             <div className="empty">
-              <p>Ask these three in order to see the whole loop:</p>
+              <p>Ask these three in order:</p>
               <ol>
                 <li>a question → <b>generates</b></li>
                 <li>a paraphrase → <b>replays at 0 tokens</b></li>
@@ -137,7 +137,6 @@ export default function Page() {
                 <span className="badge" style={{ background: ROUTE_COLOR[r.route] ?? "#64748b" }}>
                   {r.route.replace(/_/g, " ")}
                 </span>
-                {r.grounded === false && <span className="ungrounded">general knowledge</span>}
                 {r.selectedModelId && <span className="model">{r.selectedModelId}</span>}
                 <span className={r.usage.totalGenerationTokens === 0 ? "tok zero" : "tok"}>
                   {r.usage.totalGenerationTokens} tokens
@@ -146,239 +145,219 @@ export default function Page() {
               </div>
             </div>
           ))}
+
           <div className="composer">
             <input
               value={q}
-              placeholder={busy ? "thinking…" : "ask about Actian, Pioneer or Guild…"}
+              placeholder={busy ? "thinking…" : "ask anything…"}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send(q)}
               disabled={busy}
             />
-            <button onClick={() => send(q)} disabled={busy || !q.trim()}>
-              ask
-            </button>
+            <button onClick={() => send(q)} disabled={busy || !q.trim()}>ask</button>
           </div>
-          <div className="trainmode">
-            <b>training mode</b>
-            {(["off", "learned", "llm"] as const).map((mo) => (
+
+          {/* Training mode. The whole strip changes state, not just the selected
+              button — "which of three buttons looks pressed" is not a legible
+              way to answer "am I in training mode right now". */}
+          <div className={routerMode === "off" ? "modes" : "modes active"}>
+            <span className="modeLabel">
+              TRAINING MODE <b>{routerMode === "off" ? "OFF" : "ON"}</b>
+            </span>
+            {MODES.map((mo) => (
               <button
-                key={mo}
-                className={routerMode === mo ? "mode on" : "mode"}
-                onClick={() => setRouterMode(mo)}
+                key={mo.id}
+                className={routerMode === mo.id ? "mode on" : "mode"}
+                onClick={() => setRouterMode(mo.id)}
                 disabled={busy}
               >
-                {mo === "off" ? "off" : mo === "learned" ? "apply learned rules · 0 tok" : `${view?.routerModel ?? "cheap model"} reads the learned prompt · ~625 tok`}
+                {mo.label}
+                <em>{mo.hint}</em>
               </button>
             ))}
-            <span className="tiny">
-              {view?.distilledRulesAvailable
-                ? `${view.distilledRulesAvailable} distilled rules${view.routerPromptSynthesized ? ", and the router's own prompt was written by claude-sonnet-5 from the judged pairs" : ""} · the lookup is the default because paying a model to read the rules cost 4,404 tokens more than it saved over 8 questions`
-                : "run `pnpm train` first — no distilled rules yet"}
-            </span>
           </div>
+
           <div className="suggest">
             {SUGGESTED.map((s) => (
               <button key={s} onClick={() => send(s)} disabled={busy}>
-                {s.length > 46 ? s.slice(0, 44) + "…" : s}
+                {s.length > 44 ? s.slice(0, 42) + "…" : s}
               </button>
             ))}
           </div>
         </section>
 
-        {/* ── live token-saving view ─────────────────────────── */}
+        {/* ── the number that matters ────────────────────────── */}
         <aside className="panel">
-          <h2>What just happened</h2>
-          {!last && <p className="dim">Ask something to see how the tokens were saved.</p>}
-          {last && (
-            <ol className="steps">
-              <li>
-                <b>1 · memory lookup</b>
-                {last.memory.hit ? (
-                  <div className="good">
-                    HIT ({last.memory.kind}, similarity {last.memory.similarity?.toFixed(3)}) → answer reused,{" "}
-                    <b>0 generation tokens</b>
-                  </div>
-                ) : last.memory.rejections.length ? (
-                  <div>
-                    <span className="warn">refused to reuse {last.memory.rejections.length} candidate(s)</span>
-                    {last.memory.rejections.slice(0, 2).map((x, i) => (
-                      <code key={i}>{x.reasons.slice(0, 2).join(" · ")}</code>
-                    ))}
-                  </div>
+          <h2>This request</h2>
+          {sv ? (
+            <>
+              <div className="bigrow">
+                <div className="big">
+                  <span className="n">{sv.tokensUsed}</span>
+                  <span className="l">tokens used</span>
+                </div>
+                <div className="vs">vs</div>
+                <div className="big muted">
+                  <span className="n">{sv.tokensBaseline}</span>
+                  <span className="l">if always {sv.baselineModel}</span>
+                </div>
+              </div>
+
+              <div className={sv.tokensSaved > 0 ? "saveband" : "saveband none"}>
+                {sv.tokensSaved > 0 ? (
+                  <>
+                    saved <b>{sv.tokensSaved} tokens</b> and <b>{usd(sv.usdSaved)}</b>
+                    <span className="pct">{sv.pct}%</span>
+                  </>
                 ) : (
-                  <div className="dim">no similar answer in memory yet</div>
+                  <>no saving here — this one needed the stronger model</>
                 )}
-              </li>
-              {!last.memory.hit && (
-                <>
-                  <li>
-                    <b>2 · retrieval</b>
-                    <div className="dim">
-                      {last.citations.length} chunk(s) ·{" "}
-                      {last.citations.map((c) => c.sourceId).join(", ") || "—"}
-                    </div>
-                  </li>
-                  <li>
-                    <b>3 · route</b>
-                    <div>
-                      <span className="badge sm" style={{ background: ROUTE_COLOR[last.route] ?? "#64748b" }}>
-                        {last.route.replace(/_/g, " ")}
-                      </span>{" "}
-                      {last.selectedModelId}
-                    </div>
-                    <code>{last.routing?.reasons.join(" · ")}</code>
-                    {last.llmRouting && (
-                      <div className={last.llmRouting.source === "llm" ? "llmrouted" : "dim"}>
-                        {last.llmRouting.source === "learned" ? (
-                          <>
-                            <b>learned rule</b> chose <b>{last.llmRouting.model}</b> — {last.llmRouting.reason}
-                            <span className="tiny"> · 0 router tokens</span>
-                          </>
-                        ) : last.llmRouting.source === "llm" ? (
-                          <>
-                            <b>{last.routerModel}</b> read the{" "}
-                            {last.llmRouting.promptSource === "synthesized" ? "model-written" : "built-in"}{" "}
-                            routing prompt and picked{" "}
-                            <b>{last.llmRouting.model}</b> — &ldquo;{last.llmRouting.reason}&rdquo;
-                            <span className="tiny"> · router cost ${last.llmRouting.costUsd.toFixed(5)}</span>
-                          </>
-                        ) : (
-                          <>router fell back to {last.llmRouting.model}: {last.llmRouting.reason}</>
-                        )}
-                      </div>
-                    )}
-                    {last.routing && (
-                      <div className="dim">
-                        lean confidence {last.routing.leanSuccessLCB.toFixed(2)} · evidence coverage{" "}
-                        {last.routing.evidenceCoverage.toFixed(2)}
-                      </div>
-                    )}
-                  </li>
-                </>
+              </div>
+
+              <div className="costrow">
+                <span>cost <b>{usd(sv.usdUsed)}</b></span>
+                <span className="dim">baseline {usd(sv.usdBaseline)}</span>
+              </div>
+
+              {last!.usage.routerTokens > 0 && (
+                <div className="warn tiny">
+                  includes {last!.usage.routerTokens} tokens the router spent deciding — counted, not hidden
+                </div>
               )}
-              <li>
-                <b>4 · tokens</b>
-                <div className="bars">
-                  <div className="bar">
-                    <span>this request</span>
-                    <div className="track">
-                      <div
-                        className="fill now"
-                        style={{ width: `${Math.max(2, (last.usage.totalGenerationTokens / last.strongEstimate) * 100)}%` }}
-                      />
-                    </div>
-                    <b>{last.usage.totalGenerationTokens}</b>
-                  </div>
-                  <div className="bar">
-                    <span>always-strong</span>
-                    <div className="track">
-                      <div className="fill ref" style={{ width: "100%" }} />
-                    </div>
-                    <b>~{last.strongEstimate}</b>
-                  </div>
-                </div>
-                <div className={savedPct > 0 ? "good" : "dim"}>
-                  {savedPct > 0 ? `${savedPct}% cheaper than routing everything to the strong model` : "no saving"}{" "}
-                  <span className="est">est.</span>
-                </div>
-                {last.usage.routerTokens > 0 && (
-                  <div className="warn tiny">
-                    includes {last.usage.routerTokens} tokens the router itself spent deciding —
-                    counted here, not hidden. On a cheap answer that overhead can exceed what the
-                    cheaper model saves.
-                  </div>
-                )}
-                <div className="dim tiny">
-                  {last.usage.localEmbeddingCalls} local embeddings (not free — local compute, zero generation) ·{" "}
-                  {last.latencyMs} ms
-                </div>
-              </li>
-            </ol>
+              <p className="basis">
+                Baseline = the measured {last!.measured.strongTokensPerCase}-token always-strong average over{" "}
+                {last!.measured.cases} benchmark cases at Pioneer&apos;s published rate. An estimate; the hard
+                number is under &ldquo;evidence&rdquo;.
+              </p>
+            </>
+          ) : (
+            <p className="dim">Ask something to see the comparison.</p>
           )}
 
-          {last?.grounded === false && (
-            <p className="ungroundedNote">
-              Outside the verified corpus, so this was answered from the model&apos;s own knowledge and
-              carries no citations. It still took the <b>cheapest model that fits the question</b> —
-              refusing would have been unhelpful rather than safe.
-            </p>
+          <h2>This session</h2>
+          {view?.session ? (
+            <div className="sess">
+              <div><span className="n">{view.session.asks}</span><span className="l">asks</span></div>
+              <div><span className="n">{view.session.replays}</span><span className="l">replayed free</span></div>
+              <div><span className="n good">{view.session.avoidedEst}</span><span className="l">tokens avoided</span></div>
+              <div><span className="n good">{usd(view.session.avoidedUsdEst ?? 0)}</span><span className="l">saved</span></div>
+            </div>
+          ) : (
+            <p className="dim">—</p>
           )}
 
-          <h2>Sponsor tools on this request</h2>
+          <h2>How it saved</h2>
           {last ? (
-            <ul className="tools">
-              {last.tools.map((t) => (
-                <li key={t.sponsor + t.what}>
-                  <span className={t.live ? "dot live" : "dot"} />
-                  <b>{t.sponsor}</b> <span className="dim">{t.what}</span>
-                  <div className="dim tiny">{t.detail}</div>
-                </li>
-              ))}
+            <ul className="how">
+              <li>
+                <b>memory</b>{" "}
+                {last.memory.hit ? (
+                  <span className="good">
+                    reused an approved answer (similarity {last.memory.similarity?.toFixed(2)}) → 0 tokens
+                  </span>
+                ) : last.memory.rejections.length ? (
+                  <span className="warn">refused to reuse — {last.memory.rejections[0]!.reasons[0]}</span>
+                ) : (
+                  <span className="dim">nothing similar stored yet</span>
+                )}
+              </li>
+              <li>
+                <b>model</b>{" "}
+                {last.llmRouting ? (
+                  last.llmRouting.source === "learned" ? (
+                    <span className="learned">
+                      learned rule → <b>{last.llmRouting.model}</b> · 0 router tokens
+                    </span>
+                  ) : (
+                    <span className="learned">
+                      {last.routerModel} read the{" "}
+                      {last.llmRouting.promptSource === "synthesized" ? "model-written" : "built-in"} prompt →{" "}
+                      <b>{last.llmRouting.model}</b> · &ldquo;{last.llmRouting.reason}&rdquo;
+                    </span>
+                  )
+                ) : (
+                  <span className="dim">{last.selectedModelId ?? "no model call"} — keyword router, free</span>
+                )}
+              </li>
+              <li>
+                <b>sponsors</b>{" "}
+                <span className="dim">
+                  {last.tools.filter((t) => t.live).map((t) => t.sponsor).join(", ") || "none live"}
+                </span>
+              </li>
             </ul>
           ) : (
             <p className="dim">—</p>
           )}
 
-          <h2>The loop — refines every interaction</h2>
-          {view?.learned?.length ? (
-            <table>
-              <thead>
-                <tr>
-                  <th>task class</th>
-                  <th>lean tried</th>
-                  <th>clean</th>
-                  <th>confidence</th>
-                  <th>routing</th>
-                </tr>
-              </thead>
-              <tbody>
-                {view.learned!.map((r) => (
-                  <tr key={r.taskType}>
-                    <td>{r.taskType}</td>
-                    <td>{r.leanTried}</td>
-                    <td>{r.cleanWins}</td>
-                    <td>{r.lcb.toFixed(2)}</td>
-                    <td className={r.verdict === "use lean" ? "good" : r.verdict === "skip lean" ? "warn" : "dim"}>
-                      {r.verdict}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p className="dim">
-              No episodes yet. The cheap route stays closed until it earns its way in — the confidence estimator
-              uses a pessimistic prior, so lean must succeed repeatedly before it is trusted.
-            </p>
-          )}
+          <button className="disclose" onClick={() => setShowDetail(!showDetail)}>
+            {showDetail ? "hide the evidence" : "show the evidence"}
+          </button>
 
-          <h2>
-            The skill it wrote for itself{" "}
-            <button
-              className="link"
-              onClick={async () => setSkill(skill === null ? await (await fetch("/api/skill")).text() : null)}
-            >
-              {skill === null ? "show" : "hide"}
-            </button>
-          </h2>
-          <p className="dim tiny">
-            Recompiled from the evidence above on every interaction, and verified against the real
-            router before it is written. <code style={{ display: "inline", padding: "1px 4px" }}>skills/routing/SKILL.md</code>
-          </p>
-          {skill !== null && <pre className="skill">{skill}</pre>}
+          {showDetail && (
+            <div className="detail">
+              <h3>Measured benchmark</h3>
+              {view?.measured && (
+                <p className="tiny">
+                  router <b className="good">{view.measured.routerQuality.toFixed(3)}</b> quality /{" "}
+                  {view.measured.routerTokens} tok · always-strong {view.measured.strongQuality.toFixed(3)} /{" "}
+                  {view.measured.strongTokens} tok, over {view.measured.cases} cases — better quality, 18% fewer
+                  tokens.
+                </p>
+              )}
 
-          {last && (
-            <div className="session">
-              {last.seededEpisodes ? (
-                <>
-                  seeded with <b>{last.seededEpisodes}</b> measured episodes (committed, from a real
-                  bootstrap run) · learned <b>{last.episodeCount - last.seededEpisodes}</b> more here
-                  <br />
-                </>
-              ) : null}
-              session · {last.session.asks} asks · {last.session.replays} replayed at zero ·{" "}
-              <b>{last.session.spent}</b> tokens spent ·{" "}
-              <b className="good">{last.session.avoidedEst}</b> avoided <span className="est">est.</span>
+              <h3>What the agent has learned</h3>
+              {view?.learned?.length ? (
+                <table>
+                  <thead>
+                    <tr><th>class</th><th>tried</th><th>clean</th><th>conf.</th><th>routing</th></tr>
+                  </thead>
+                  <tbody>
+                    {view.learned.map((r) => (
+                      <tr key={r.taskType}>
+                        <td>{r.taskType}</td><td>{r.leanTried}</td><td>{r.cleanWins}</td>
+                        <td>{r.lcb.toFixed(2)}</td>
+                        <td className={r.verdict === "use lean" ? "good" : "warn"}>{r.verdict}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="dim tiny">No episodes yet.</p>
+              )}
+
+              <h3>Sponsor tools</h3>
+              {last ? (
+                <ul className="tools">
+                  {last.tools.map((t) => (
+                    <li key={t.sponsor + t.what}>
+                      <span className={t.live ? "dot live" : "dot"} />
+                      <b>{t.sponsor}</b> <span className="dim">{t.what}</span>
+                      <div className="dim tiny">{t.detail}</div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="dim tiny">—</p>
+              )}
+
+              <h3>
+                The skill it wrote for itself{" "}
+                <button
+                  className="link"
+                  onClick={async () => setSkill(skill === null ? await (await fetch("/api/skill")).text() : null)}
+                >
+                  {skill === null ? "show" : "hide"}
+                </button>
+              </h3>
+              <p className="tiny dim">
+                Recompiled on every interaction, including the distilled routing table
+                {view?.routerPromptSynthesized
+                  ? " — and the router's own prompt, written by claude-sonnet-5 from the judged pairs"
+                  : ""}
+                . <code>skills/routing/SKILL.md</code>
+              </p>
+              {skill !== null && <pre className="skill">{skill}</pre>}
             </div>
           )}
         </aside>
