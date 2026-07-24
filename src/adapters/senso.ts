@@ -10,9 +10,9 @@ const BASE = process.env.SENSO_BASE_URL ?? "https://apiv2.senso.ai/api/v1";
 const TRUTH: SensoHit[] = [
   {
     content_id: "truth-goal",
-    title: "BudgetDarwin goal",
+    title: "mintoken goal",
     chunk_text:
-      "BudgetDarwin keeps quality at or above 0.90 while cutting batch cost at least 40% versus always-premium routing. Tiers: cheap, mid, premium on Pioneer.",
+      "mintoken keeps quality at or above 0.90 while cutting batch cost at least 40% versus always-premium routing. Tiers: cheap, mid, premium on Pioneer.",
   },
   {
     content_id: "truth-senso",
@@ -141,7 +141,7 @@ export function policyMarkdown(opts: {
     .join("\n");
   return `# Routing Policy v${opts.version} — ${opts.label}
 
-Evolved by BudgetDarwin. Quality ${(opts.quality * 100).toFixed(1)}%. Batch cost $${opts.cost_usd.toFixed(4)}. Savings vs always-premium: ${opts.savings_pct.toFixed(1)}%.
+Evolved by mintoken. Quality ${(opts.quality * 100).toFixed(1)}%. Batch cost $${opts.cost_usd.toFixed(4)}. Savings vs always-premium: ${opts.savings_pct.toFixed(1)}%.
 
 ## Default tier
 \`${opts.default_tier}\`
@@ -153,7 +153,7 @@ ${rules}
 Route each task through these rules before calling Pioneer. On repeat questions, check answer memory first.
 
 ---
-*Published by BudgetDarwin · Powered by Senso*
+*Published by mintoken · Powered by Senso*
 `;
 }
 

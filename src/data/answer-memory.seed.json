@@ -1,9 +1,9 @@
 [
   {
     "id": "mem-seed-01",
-    "question_norm": "what does budgetdarwin optimize for",
-    "question": "What does BudgetDarwin optimize for?",
-    "answer": "BudgetDarwin keeps answer quality high while cutting model cost. It routes each task to cheap, mid, or premium Pioneer tiers and only spends more when quality would otherwise drop.",
+    "question_norm": "what does mintoken optimize for",
+    "question": "What does mintoken optimize for?",
+    "answer": "mintoken keeps answer quality high while cutting model cost. It routes each task to cheap, mid, or premium Pioneer tiers and only spends more when quality would otherwise drop.",
     "tier": "mid",
     "model": "seed/memory",
     "quality": 0.94,
@@ -16,7 +16,7 @@
     "id": "mem-seed-02",
     "question_norm": "why skip recomputing an answer that was already solved",
     "question": "Why skip recomputing an answer that was already solved?",
-    "answer": "Answer memory stores prior prompts and solutions. On a repeat question BudgetDarwin reuses the stored solution instead of calling Pioneer again, which saves cost and latency.",
+    "answer": "Answer memory stores prior prompts and solutions. On a repeat question mintoken reuses the stored solution instead of calling Pioneer again, which saves cost and latency.",
     "tier": "cheap",
     "model": "seed/memory",
     "quality": 0.93,

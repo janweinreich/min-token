@@ -1,16 +1,16 @@
 import type { DarwinState, RoutePolicy, RouteTier, Task } from "./types";
 
-/** Grounded Q&A about BudgetDarwin itself — scoring uses must_include vs answer text (+ Senso when live). */
+/** Grounded Q&A about mintoken itself. Scoring uses must_include vs answer text (+ Senso when live). */
 export const DEMO_TASKS: Task[] = [
   {
     id: "t01",
-    question: "What does BudgetDarwin optimize for?",
+    question: "What does mintoken optimize for?",
     must_include: ["quality", "cost"],
     features: { length: "short", needs_precision: false },
   },
   {
     id: "t02",
-    question: "What quality floor does BudgetDarwin target?",
+    question: "What quality floor does mintoken target?",
     must_include: ["0.90", "90"],
     features: { length: "short", needs_precision: true },
   },
@@ -58,7 +58,7 @@ export const DEMO_TASKS: Task[] = [
   },
   {
     id: "t10",
-    question: "Name the five sponsor tools wired into BudgetDarwin.",
+    question: "Name the five sponsor tools wired into mintoken.",
     must_include: ["pioneer", "senso", "guild", "band", "replay"],
     features: { length: "medium", needs_precision: true },
   },
@@ -143,7 +143,7 @@ export function createInitialState(): DarwinState {
         at: new Date().toISOString(),
         source: "engine",
         summary:
-          "BudgetDarwin ready. Goal: quality ≥ 0.90 and cost ≤ 60% of always-premium.",
+          "mintoken ready. Goal: quality ≥ 0.90 and cost ≤ 60% of always-premium.",
       },
     ],
     memory: [],

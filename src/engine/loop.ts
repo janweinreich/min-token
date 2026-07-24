@@ -306,7 +306,7 @@ export async function runGeneration(state: DarwinState): Promise<{
   if (guild.live) s.sponsor_status = { ...s.sponsor_status, guild: true };
 
   push(
-    evt(guild.live ? "guild" : "cache", `Guild A/B: ${guild.decision} — ${guild.reason}`, {
+    evt(guild.live ? "guild" : "cache", `Guild A/B: ${guild.decision}. ${guild.reason}`, {
       guild_trace_url: guild.trace_url,
       payload: { session_id: guild.session_id, live: guild.live, error: guild.error },
     }),

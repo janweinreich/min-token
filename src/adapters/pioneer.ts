@@ -69,7 +69,7 @@ function estimateCost(
 function fallbackAnswer(task: Task, tier: RouteTier): string {
   const facts = task.must_include.join(", ");
   const bank: Record<string, string> = {
-    t01: "BudgetDarwin optimizes for answer quality and model cost at the same time. It only spends more when a cheaper route would miss the quality floor.",
+    t01: "mintoken optimizes for answer quality and model cost at the same time. It only spends more when a cheaper route would miss the quality floor.",
     t02: "The quality floor is 0.90 (90%). Challenger policies that fall below that are rejected.",
     t03: "The standing goal is at least 40% cost reduction versus an always-premium baseline, while quality stays at or above 0.90.",
     t04: "The three Pioneer route tiers are cheap, mid, and premium.",
@@ -84,7 +84,7 @@ function fallbackAnswer(task: Task, tier: RouteTier): string {
   };
   return (
     bank[task.id] ??
-    `Cached ${tier} answer covering: ${facts}. BudgetDarwin routes work so spend tracks difficulty.`
+    `Cached ${tier} answer covering: ${facts}. mintoken routes work so spend tracks difficulty.`
   );
 }
 
@@ -129,7 +129,7 @@ export async function inferTask(opts: {
         {
           role: "system",
           content:
-            "You answer briefly and factually for a product called BudgetDarwin. Cover the required facts. No filler, no marketing tone.",
+            "You answer briefly and factually for a product called mintoken. Cover the required facts. No filler, no marketing tone.",
         },
         {
           role: "user",

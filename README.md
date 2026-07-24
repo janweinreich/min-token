@@ -1,4 +1,4 @@
-# BudgetDarwin (`min-token`)
+# mintoken
 
 tokens& Self-Evolving Agents Hackathon — Jul 24, 2026 · SF  
 Repo: https://github.com/janweinreich/min-token

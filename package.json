@@ -2,7 +2,7 @@
   "name": "min-token",
   "version": "0.1.0",
   "private": true,
-  "description": "BudgetDarwin — evolve model routing to cut LLM spend without losing quality",
+  "description": "mintoken — evolve model routing to cut LLM spend without losing quality",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",

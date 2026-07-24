@@ -51,8 +51,25 @@ export async function runPolicyAB(opts: {
       const versionId =
         process.env.GUILD_POLICY_VERSION_ID ||
         process.env.GUILD_ORGANIZER_VERSION_ID;
+
+      if (!versionId) {
+        const session_id = `guild-local-${randomUUID().slice(0, 8)}`;
+        return {
+          live: false,
+          session_id,
+          trace_url: `${traceBase()}/${session_id}`,
+          decision,
+          reason,
+          error:
+            "GUILD_POLICY_VERSION_ID / GUILD_ORGANIZER_VERSION_ID missing — local A/B decision",
+        };
+      }
+
+      // Guild requires session_type + agent_version_id for AGENT_TEST sessions.
       const body: Record<string, unknown> = {
         agent_id: agentId,
+        session_type: "agent_test",
+        agent_version_id: versionId,
         input: {
           task: "policy_ab_eval",
           ...opts,
@@ -60,7 +77,6 @@ export async function runPolicyAB(opts: {
           reason,
         },
       };
-      if (versionId) body.version_id = versionId;
 
       const res = await fetch(`${base}/workspaces/${workspaceId}/sessions`, {
         method: "POST",

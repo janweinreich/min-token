@@ -26,7 +26,7 @@ export async function announcePromotion(opts: {
   savings_pct: number;
 }): Promise<BandAnnounceResult> {
   const content = [
-    `BudgetDarwin promote: policy v${opts.policy_version} (${opts.policy_label}).`,
+    `mintoken promote: policy v${opts.policy_version} (${opts.policy_label}).`,
     `Quality ${(opts.quality * 100).toFixed(1)}%.`,
     `Batch cost $${opts.cost_usd.toFixed(4)}.`,
     `Savings vs always-premium: ${opts.savings_pct.toFixed(1)}%.`,
@@ -53,7 +53,7 @@ export async function announcePromotion(opts: {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name: "BudgetDarwin ops" }),
+        body: JSON.stringify({ name: "mintoken ops" }),
         signal: AbortSignal.timeout(15000),
       });
       if (create.ok) {
