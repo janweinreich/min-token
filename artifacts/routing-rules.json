@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-24T22:59:14.689Z",
+  "generatedAt": "2026-07-24T23:04:35.706Z",
   "rules": [
     {
       "taskType": "comparison",
@@ -26,11 +26,11 @@
     },
     {
       "taskType": "lookup",
-      "n": 9,
+      "n": 10,
       "recommended": "gpt-5-nano",
-      "support": 0.8888888888888888,
+      "support": 0.9,
       "confident": true,
-      "meanSavingPct": 97.37287983235281,
+      "meanSavingPct": 97.54218262189934,
       "examples": [
         "What package installs the Actian JavaScript SDK?",
         "Which port does the Actian VectorAI gRPC endpoint listen on?"

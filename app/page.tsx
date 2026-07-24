@@ -384,7 +384,7 @@ export default function Page() {
             <p className="dim">Ask something to see the comparison.</p>
           )}
 
-          <h2>Why it was cheap</h2>
+          {last && <h2>Why it was cheap</h2>}
           {last ? (
             <ul className="how">
               <li>
@@ -418,9 +418,7 @@ export default function Page() {
                 )}
               </li>
             </ul>
-          ) : (
-            <p className="dim">—</p>
-          )}
+          ) : null}
 
           <h2>What it has learned</h2>
           {status?.learningLog?.length ? (

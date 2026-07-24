@@ -1,6 +1,6 @@
 # Routing Skill v1
 
-> Generated 2026-07-24T23:01:13.445Z from policy v1. **Do not edit by hand** — this file is recompiled on every policy promotion, and every rule below is derived from a policy parameter or from measured routing episodes.
+> Generated 2026-07-24T23:03:57.281Z from policy v1. **Do not edit by hand** — this file is recompiled on every policy promotion, and every rule below is derived from a policy parameter or from measured routing episodes.
 
 ## Goal
 
@@ -22,10 +22,10 @@ Chunks are truncated to 1200 characters. This is the highest-leverage number her
 
 | task class | n | lean tried | clean wins | success (lower bound) | mean tokens lean → strong | routing |
 |---|---:|---:|---:|---:|---:|---|
-| comparison | 31 | 11 | 8 | 0.44 | 275 → 852 | **skip lean** — go straight to strong |
-| explanation | 35 | 4 | 3 | 0.29 | 380 → 786 | **skip lean** — go straight to strong |
-| lookup | 94 | 49 | 45 | 0.81 | 317 → 744 | **use lean** |
-| unknown | 1 | 0 | 0 | 0.00 | – → 752 | _gathering evidence_ |
+| comparison | 30 | 11 | 8 | 0.44 | 275 → 847 | **skip lean** — go straight to strong |
+| explanation | 34 | 4 | 3 | 0.29 | 380 → 779 | **skip lean** — go straight to strong |
+| lookup | 95 | 50 | 46 | 0.81 | 305 → 744 | **use lean** |
+| unknown | 1 | 0 | 0 | 0.00 | – → 754 | _gathering evidence_ |
 
 Routing **comparison, explanation** straight to the strong model avoids the retry tax: a lean attempt that fails and escalates costs more than starting strong, because the repair reuses the larger context.
 
