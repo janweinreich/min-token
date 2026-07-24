@@ -150,12 +150,17 @@ describe("candidate generation stays inside the bounds", () => {
 
   it("explores the highest-leverage knobs first, within a small candidate budget", () => {
     // Regression: candidates were once generated in bounds-declaration order and
-    // truncated at 5, which meant the loop explored five threshold knobs and NEVER
-    // tried maxCharsPerChunk or leanContextK — the evidence knobs that dominate,
-    // because input is ~82% of the token budget.
+    // truncated at 5, so the loop explored five threshold knobs and never tried
+    // its best lever at all.
+    //
+    // The ORDER here is set by measurement, not intuition, and the measurement
+    // overturned the first guess. On the live benchmark lean-only cost 4074
+    // tokens against strong-only at 8844, so the lean/strong split is worth
+    // ~4770 tokens — while maxCharsPerChunk 1200->1100 moved the total by ~3.
+    // Route selection dominates evidence volume by three orders of magnitude.
     const first = generateCandidates(DEFAULT_POLICY, { max: 3 }).map((c) => c.mutation.parameter);
-    expect(first).toContain("maxCharsPerChunk");
-    expect(first).toContain("leanContextK");
+    expect(first).toContain("leanMinHistoricalSuccess");
+    expect(first).toContain("leanMinContextScore");
     expect(first).not.toContain("leanMaxOutputTokens"); // ~2.8% on lean cases only
   });
 

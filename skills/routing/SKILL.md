@@ -22,11 +22,11 @@ Chunks are truncated to 1200 characters. This is the highest-leverage number her
 
 | task class | n | lean tried | clean wins | success (lower bound) | mean tokens lean → strong | routing |
 |---|---:|---:|---:|---:|---:|---|
-| comparison | 9 | 3 | 1 | 0.08 | – → – | **skip lean** — go straight to strong |
-| explanation | 13 | 1 | 1 | 0.14 | – → – | _gathering evidence_ |
-| lookup | 78 | 40 | 40 | 0.88 | – → – | **use lean** |
+| comparison | 30 | 11 | 9 | 0.52 | – → – | **skip lean** — go straight to strong |
+| explanation | 34 | 4 | 4 | 0.42 | – → – | **skip lean** — go straight to strong |
+| lookup | 92 | 47 | 45 | 0.85 | – → – | **use lean** |
 
-Routing **comparison** straight to the strong model avoids the retry tax: a lean attempt that fails and escalates costs more than starting strong, because the repair reuses the larger context.
+Routing **comparison, explanation** straight to the strong model avoids the retry tax: a lean attempt that fails and escalates costs more than starting strong, because the repair reuses the larger context.
 
 ## Rules that are not negotiable
 

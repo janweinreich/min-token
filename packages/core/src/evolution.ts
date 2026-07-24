@@ -42,13 +42,18 @@ export interface Candidate {
  * lever.
  */
 const LEVERAGE_ORDER: Array<keyof RoutingPolicy> = [
+  // Measured on the live benchmark: lean-only cost 4074 tokens against
+  // strong-only at 8844. The lean/strong SPLIT is therefore worth ~4770 tokens,
+  // while maxCharsPerChunk 1200->1100 moved the total by ~3. Route selection
+  // dominates evidence volume by three orders of magnitude, so the knobs that
+  // decide how much traffic takes the cheap route are explored first.
+  "leanMinHistoricalSuccess",
+  "leanMinContextScore",
+  "leanCrossSourceGap",
   "maxCharsPerChunk",
   "leanContextK",
   "strongContextK",
   "semanticReplayThreshold",
-  "leanMinContextScore",
-  "leanMinHistoricalSuccess",
-  "leanCrossSourceGap",
   "semanticReplayMargin",
   "strongMaxOutputTokens",
   "leanMaxOutputTokens",

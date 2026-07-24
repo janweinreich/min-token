@@ -117,7 +117,7 @@ let previous: RoutingPolicy | undefined;
 let version = 1;
 let lastHoldout: { before: any; after: any } | undefined;
 
-for (let gen = 1; gen <= 3; gen++) {
+for (let gen = 1; gen <= 5; gen++) {
   const cycle = await runEvolutionCycle(policy, evaluate, { ...DEFAULT_GATE, minReplayPrecisionLB: 0 });
   console.log(`cycle ${gen}: ${cycle.decision.toUpperCase()}`);
   for (const c of cycle.candidates) {
