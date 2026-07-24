@@ -1,0 +1,21 @@
+{
+  "name": "budget-darwin",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "calibrate": "tsx scripts/calibrate.ts",
+    "doctor": "tsx scripts/doctor.ts",
+    "bench": "tsx scripts/bench.ts",
+    "evolve": "tsx scripts/evolve.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "4.2.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^3.2.6"
+  }
+}

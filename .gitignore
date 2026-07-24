@@ -1,0 +1,8 @@
+node_modules/
+.next/
+.env.local
+.env*.local
+.models/
+data/memory/*.jsonl
+artifacts/
+*.tsbuildinfo
