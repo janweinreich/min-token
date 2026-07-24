@@ -1,4 +1,10 @@
-import type { DarwinState, RoutePolicy, RouteTier, Task } from "./types";
+import type {
+  ChatSession,
+  DarwinState,
+  RoutePolicy,
+  RouteTier,
+  Task,
+} from "./types";
 
 /** Grounded Q&A about mintoken itself. Scoring uses must_include vs answer text (+ Senso when live). */
 export const DEMO_TASKS: Task[] = [
@@ -128,10 +134,24 @@ export function cheapChallenger(): RoutePolicy {
   };
 }
 
+export function newChatSession(title = "New chat"): ChatSession {
+  const at = new Date().toISOString();
+  return {
+    id: `chat-${Math.random().toString(36).slice(2, 10)}`,
+    title,
+    created_at: at,
+    updated_at: at,
+    messages: [],
+  };
+}
+
 export function createInitialState(): DarwinState {
+  const chat = newChatSession();
   return {
     goal: { min_quality: 0.9, max_cost_ratio: 0.6 },
     tasks: DEMO_TASKS,
+    chats: [chat],
+    active_chat_id: chat.id,
     baseline: { quality: 0, cost_usd: 0, latency_ms: 0, measured: false },
     policy: initialPolicy(),
     challenger: cheapChallenger(),
@@ -143,7 +163,7 @@ export function createInitialState(): DarwinState {
         at: new Date().toISOString(),
         source: "engine",
         summary:
-          "mintoken ready. Goal: quality ≥ 0.90 and cost ≤ 60% of always-premium.",
+          "mintoken ready. Type a prompt to route via Pioneer, score with Senso, and evolve cheaper policies.",
       },
     ],
     memory: [],

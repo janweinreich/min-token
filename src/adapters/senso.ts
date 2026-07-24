@@ -139,7 +139,7 @@ export function policyMarkdown(opts: {
   const rules = opts.rules
     .map((r) => `- \`${r.id}\` → **${r.use}** (max_tokens ${r.max_tokens})`)
     .join("\n");
-  return `# Routing Policy v${opts.version} — ${opts.label}
+  return `# Routing Policy v${opts.version}: ${opts.label}
 
 Evolved by mintoken. Quality ${(opts.quality * 100).toFixed(1)}%. Batch cost $${opts.cost_usd.toFixed(4)}. Savings vs always-premium: ${opts.savings_pct.toFixed(1)}%.
 
@@ -157,7 +157,7 @@ Route each task through these rules before calling Pioneer. On repeat questions,
 `;
 }
 
-/** Best-effort publish note — live citeables need Senso org destinations configured. */
+/** Best-effort publish note. Live citeables need Senso org destinations configured. */
 export async function publishPolicyNote(markdown: string): Promise<{
   live: boolean;
   url?: string;
@@ -165,7 +165,7 @@ export async function publishPolicyNote(markdown: string): Promise<{
 }> {
   void markdown;
   if (!apiKey()) {
-    return { live: false, error: "SENSO_API_KEY missing — policy kept in-app" };
+    return { live: false, error: "SENSO_API_KEY missing; policy kept in-app" };
   }
   // Without a known create-raw HTTP shape for all orgs, keep markdown in state
   // and surface a stable in-app citeable path judges can open.

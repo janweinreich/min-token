@@ -15,38 +15,38 @@ type Step = {
 const STEPS: Step[] = [
   {
     title: "Welcome to mintoken",
-    body: "Hit Run generation to evolve cheaper Pioneer routes while holding quality. Autopilot keeps looping without babysitting.",
+    body: "This is the product UI shell. Type in the floating composer; your partner wires the live routing loop behind it.",
   },
   {
     title: "Pioneer routes each call",
     sponsor: "Pioneer",
     logo: "/sponsors/pioneer.png",
-    body: "Tasks go to cheap, mid, or premium tiers. The policy learns when a cheaper tier is enough.",
+    body: "Prompts will go to cheap, mid, or premium tiers once Pioneer is connected.",
   },
   {
     title: "Senso scores quality",
     sponsor: "Senso",
     logo: "/sponsors/senso.png",
-    body: "Answers are checked against ground-truth context so quality is not self-graded by the model that wrote them.",
+    body: "Quality will be checked against ground-truth context once Senso is connected.",
   },
   {
     title: "Guild promotes or rejects",
     sponsor: "Guild",
     logo: "/sponsors/guild.png",
-    body: "A challenger policy only promotes when quality stays high and cost drops. Trace links show up in Activity.",
+    body: "Cheaper policies promote only when quality holds, once Guild A/B is connected.",
   },
   {
     title: "Band announces wins",
     sponsor: "Band",
     logo: "/sponsors/band.png",
-    body: "On promote, Band posts an ops note with policy version, quality, and savings.",
+    body: "On promote, Band will post ops notes with version, quality, and savings.",
   },
   {
     title: "Memory + Replay",
     sponsor: "Replay",
     logo: "/sponsors/replay.png",
     logoClass: "replay",
-    body: "Answer memory reuses solved prompts at $0 compute. Replay QA’s the deployed UI after you ship.",
+    body: "Answer memory and Replay QA light up in these panels once wired.",
   },
 ];
 

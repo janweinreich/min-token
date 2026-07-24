@@ -61,7 +61,7 @@ export async function runPolicyAB(opts: {
           decision,
           reason,
           error:
-            "GUILD_POLICY_VERSION_ID / GUILD_ORGANIZER_VERSION_ID missing — local A/B decision",
+            "GUILD_POLICY_VERSION_ID / GUILD_ORGANIZER_VERSION_ID missing; local A/B decision",
         };
       }
 
@@ -131,6 +131,6 @@ export async function runPolicyAB(opts: {
     trace_url: `${traceBase()}/${session_id}`,
     decision,
     reason,
-    error: "GUILD_API_KEY or GUILD_WORKSPACE_ID missing — local A/B decision",
+    error: "GUILD_API_KEY or GUILD_WORKSPACE_ID missing; local A/B decision",
   };
 }

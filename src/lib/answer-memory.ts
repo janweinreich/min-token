@@ -63,7 +63,7 @@ function persist(store: MemoryStore) {
       "utf8",
     );
   } catch {
-    // Vercel read-only FS — in-memory still works for warm instances
+    // Vercel read-only FS; in-memory still works for warm instances
   }
 }
 

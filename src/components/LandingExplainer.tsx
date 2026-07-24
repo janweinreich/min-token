@@ -45,7 +45,7 @@ const INTEGRATIONS: {
     title: "Answer memory",
     bullets: [
       "Runs before every Pioneer call.",
-      "JSON seed + runtime store — no database.",
+      "JSON seed + runtime store. No database.",
       "Hits raise Memory hits and dollars avoided.",
     ],
   },
@@ -54,7 +54,7 @@ const INTEGRATIONS: {
     title: "Pioneer",
     bullets: [
       "OpenAI-compatible chat at PIONEER_BASE_URL.",
-      "Policy maps features → cheap / mid / premium.",
+      "Policy maps features to cheap / mid / premium.",
       "Drives Batch cost, savings, and routing rules.",
     ],
   },
@@ -63,7 +63,7 @@ const INTEGRATIONS: {
     title: "Senso",
     bullets: [
       "Context via /org/search/context.",
-      "Quality vs ground truth — not self-graded.",
+      "Quality vs ground truth, not self-graded.",
       "Below 0.90 blocks Guild promote.",
     ],
   },
@@ -89,8 +89,8 @@ const INTEGRATIONS: {
     id: "replay",
     title: "Replay",
     bullets: [
-      "Outside the generation loop — LoopQA the public URL.",
-      'Mark Replay QA → POST { "action": "mark-replay" }.',
+      "Outside the generation loop. LoopQA the public URL.",
+      'Mark Replay QA posts { "action": "mark-replay" }.',
       "Lights the Replay row and logs QA in Activity.",
     ],
   },
@@ -129,7 +129,7 @@ export function LandingExplainer() {
         <div className="landing-section">
           <div className="landing-section-h">
             <h3>Generation loop</h3>
-            <p>One Run generation walks this path end to end.</p>
+            <p>One user prompt walks this path end to end.</p>
           </div>
           <div className="landing-flow">
             {FLOW.map((step) => (

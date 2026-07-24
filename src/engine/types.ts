@@ -92,12 +92,35 @@ export type AnswerMemoryRecord = {
   updated_at: string;
 };
 
+export type ChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  at: string;
+  trial_id?: string;
+  tier?: RouteTier;
+  model?: string;
+  quality?: number;
+  cost_usd?: number;
+  from_memory?: boolean;
+};
+
+export type ChatSession = {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  messages: ChatMessage[];
+};
+
 export type DarwinState = {
   goal: {
     min_quality: number;
     max_cost_ratio: number;
   };
   tasks: Task[];
+  chats: ChatSession[];
+  active_chat_id: string;
   baseline: {
     quality: number;
     cost_usd: number;

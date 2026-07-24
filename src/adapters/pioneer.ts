@@ -111,7 +111,7 @@ export async function inferTask(opts: {
       prompt_tokens,
       completion_tokens,
       cost_usd: estimateCost(opts.tier, prompt_tokens, completion_tokens),
-      error: "PIONEER_API_KEY missing — using local answers",
+      error: "PIONEER_API_KEY missing; using local answers",
     };
   }
 

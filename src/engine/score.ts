@@ -1,7 +1,7 @@
 import type { Task } from "@/engine/types";
 import type { SensoHit } from "@/adapters/senso";
 
-/** Local checklist score — works offline. Live Senso hits boost the score. */
+/** Local checklist score; works offline. Live Senso hits boost the score. */
 export function scoreAnswer(opts: {
   task: Task;
   answer: string;
@@ -23,11 +23,15 @@ export function scoreAnswer(opts: {
 
   let sensoBoost = 0;
   if (opts.sensoHits && opts.sensoHits.length > 0) {
-    const hitText = opts.sensoHits.map((h) => h.chunk_text.toLowerCase()).join(" ");
-    const overlap = opts.task.must_include.filter((k) =>
-      hitText.includes(k.toLowerCase()),
-    ).length;
-    sensoBoost = Math.min(0.15, (overlap / opts.task.must_include.length) * 0.15);
+    if (opts.task.must_include.length === 0) {
+      sensoBoost = Math.min(0.15, opts.sensoHits.length * 0.05);
+    } else {
+      const hitText = opts.sensoHits.map((h) => h.chunk_text.toLowerCase()).join(" ");
+      const overlap = opts.task.must_include.filter((k) =>
+        hitText.includes(k.toLowerCase()),
+      ).length;
+      sensoBoost = Math.min(0.15, (overlap / opts.task.must_include.length) * 0.15);
+    }
   }
 
   const lengthPenalty =

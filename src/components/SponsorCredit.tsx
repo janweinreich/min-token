@@ -10,6 +10,7 @@ const CREDIT: Record<
     name: "Pioneer",
     feature: "routing",
     src: "/sponsors/pioneer.png",
+    className: "pioneer",
   },
   senso: {
     name: "Senso",

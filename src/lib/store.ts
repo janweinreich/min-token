@@ -1,9 +1,19 @@
 import type { DarwinState } from "@/engine/types";
-import { createInitialState } from "@/engine/seed";
+import { createInitialState, newChatSession } from "@/engine/seed";
 import { listMemory } from "@/lib/answer-memory";
 
 declare global {
   var __budgetDarwinState: DarwinState | undefined;
+}
+
+function withChats(s: DarwinState): DarwinState {
+  if (s.chats?.length && s.active_chat_id) return s;
+  const chat = newChatSession();
+  return {
+    ...s,
+    chats: s.chats?.length ? s.chats : [chat],
+    active_chat_id: s.active_chat_id ?? chat.id,
+  };
 }
 
 export function getState(): DarwinState {
@@ -12,12 +22,14 @@ export function getState(): DarwinState {
     s.memory = listMemory();
     globalThis.__budgetDarwinState = s;
   }
-  return globalThis.__budgetDarwinState;
+  const next = withChats(globalThis.__budgetDarwinState);
+  globalThis.__budgetDarwinState = next;
+  return next;
 }
 
 export function setState(next: DarwinState): DarwinState {
-  globalThis.__budgetDarwinState = next;
-  return next;
+  globalThis.__budgetDarwinState = withChats(next);
+  return globalThis.__budgetDarwinState;
 }
 
 export function resetState(): DarwinState {
