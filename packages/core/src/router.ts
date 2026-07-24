@@ -12,6 +12,14 @@ export interface RoutingEpisode {
   route: Route;
   passed: boolean;
   repaired: boolean;
+  /**
+   * Task class this episode belongs to. History is scoped by it: without that,
+   * one global success estimate lets a class where lean keeps failing
+   * (comparisons, say) close the lean route for a class where it works fine
+   * (lookups). The per-class routing the synthesized skill advertises is only
+   * deliverable if the router estimates per class.
+   */
+  taskType?: string;
 }
 
 export interface RequestFeatures {
@@ -48,11 +56,14 @@ export function leanSuccessLowerBound(
   episodes: RoutingEpisode[],
   relatedThreshold: number,
   z = 1.2816, // one-sided 90%
+  /** Scope to a task class. Omit to pool every class. */
+  taskType?: string,
 ): number {
   let n = 0;
   let k = 0;
   for (const e of episodes) {
     if (e.route !== "LEAN_RAG") continue;
+    if (taskType !== undefined && e.taskType !== undefined && e.taskType !== taskType) continue;
     // Weight by how similar the past question was; a distant episode says little.
     const w = Math.max(
       0,
@@ -95,7 +106,8 @@ export function chooseRoute(
   const top = f.chunks[0]?.score ?? 0;
   const gap = crossSourceGap(f.chunks, policy.leanContextK);
   const coverage = evidenceCoverage(f.queryTerms, f.chunks);
-  const lcb = leanSuccessLowerBound(episodes, policy.relatedThreshold);
+  // Scoped to this task class — see RoutingEpisode.taskType.
+  const lcb = leanSuccessLowerBound(episodes, policy.relatedThreshold, 1.2816, f.taskType);
 
   const base = {
     reasons,
