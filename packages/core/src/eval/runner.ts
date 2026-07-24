@@ -12,6 +12,15 @@ import { ask, type PipelineDeps } from "../pipeline.js";
 import type { RoutingPolicy } from "../policy.js";
 import type { RoutingEpisode } from "../router.js";
 import { scoreAnswer, type BenchmarkCase, type CaseResult } from "./scorer.js";
+import {
+  EXTRACTOR_VERSION,
+  buildEmbeddingText,
+  evaluateReplay,
+  normalizeForExact,
+  type Candidate,
+  type MemoryRecord,
+  type ReplayPolicy,
+} from "../replay-guard.js";
 import type { Embedder } from "../ports.js";
 
 export async function loadCases(path: string): Promise<BenchmarkCase[]> {
@@ -127,9 +136,122 @@ export async function runBenchmark(opts: RunOptions): Promise<RunResult> {
         passed: !score.criticalFailure && score.score >= 0.8,
         repaired: false,
         taskType: c.taskType,
+        generationTokens: r.usage.totalGenerationTokens,
       });
     }
   }
 
-  return { results, episodes, replayCorrect, replayTotal: replayTotal || 1 };
+  // NOTE: no `|| 1` fallback. "Measured nothing" must surface as zero rather than
+  // as a passing denominator of one — that fudge is how an unmeasured guarantee
+  // reads like a satisfied one.
+  return { results, episodes, replayCorrect, replayTotal };
+}
+
+// ── Replay safety, measured separately and for free ──────────────────────────
+
+export interface ReplayProbe {
+  id: string;
+  question: string;
+  mustReplay?: boolean;
+  mustRejectReplay?: boolean;
+  why: string;
+}
+
+export interface SeedMemory {
+  id: string;
+  normalizedQuestion: string;
+  answerText: string;
+  answerFormat: string;
+  language: string;
+  taskType: string;
+}
+
+export interface ReplaySafetyResult {
+  correct: number;
+  total: number;
+  failures: Array<{ id: string; expected: string; actual: string; why: string; reasons: string[] }>;
+}
+
+/**
+ * Evaluates ONLY the replay decision — no generation, no model call.
+ *
+ * That is the point: a replay decision is an embedding plus a gate evaluation,
+ * so this set costs zero generation tokens and runs in milliseconds. It is the
+ * cheapest evidence in the build, which is why it should be large: six perfect
+ * pairs support a Wilson lower bound of 0.512, nowhere near the >= 0.95 the
+ * safety claim needs, while eighty reach 0.954.
+ */
+export async function runReplaySafety(opts: {
+  probes: ReplayProbe[];
+  seeds: SeedMemory[];
+  embedder: Embedder;
+  policy: ReplayPolicy;
+  activeSnapshotId: string;
+}): Promise<ReplaySafetyResult> {
+  const vectors = await opts.embedder.embedBatch(
+    opts.seeds.map((s) => buildEmbeddingText(s.normalizedQuestion)),
+  );
+  const memories: MemoryRecord[] = opts.seeds.map((s) => ({
+    id: s.id,
+    normalizedQuestion: s.normalizedQuestion,
+    answerText: s.answerText,
+    answerFormat: s.answerFormat,
+    language: s.language,
+    status: "approved",
+    replayable: true,
+    volatile: false,
+    criticalFailure: false,
+    qualityScore: 0.97,
+    citationScore: 1,
+    kbSnapshotId: opts.activeSnapshotId,
+    embeddingModelId: opts.embedder.modelId,
+    extractorVersion: EXTRACTOR_VERSION,
+    negativeFeedbackCount: 0,
+    createdAt: new Date().toISOString(),
+  }));
+
+  const failures: ReplaySafetyResult["failures"] = [];
+  let correct = 0;
+
+  for (const p of opts.probes) {
+    const [maskedQ, rawQ] = await opts.embedder.embedBatch([
+      buildEmbeddingText(p.question),
+      normalizeForExact(p.question),
+    ]);
+    const seedRaw = await opts.embedder.embedBatch(
+      opts.seeds.map((s) => normalizeForExact(s.normalizedQuestion)),
+    );
+
+    const candidates: Candidate[] = memories
+      .map((m, i) => ({
+        memory: m,
+        cosMasked: vectors[i]!.reduce((s, v, j) => s + v * maskedQ![j]!, 0),
+        cosRaw: seedRaw[i]!.reduce((s, v, j) => s + v * rawQ![j]!, 0),
+      }))
+      .sort((a, b) => b.cosMasked - a.cosMasked)
+      .slice(0, 3);
+
+    const verdict = evaluateReplay({
+      queryText: p.question,
+      candidates,
+      policy: opts.policy,
+      activeSnapshotId: opts.activeSnapshotId,
+      semanticEnabled: opts.embedder.semantic,
+    });
+
+    const expectReplay = p.mustReplay === true;
+    const ok = verdict.allowed === expectReplay;
+    if (ok) correct++;
+    else {
+      failures.push({
+        id: p.id,
+        expected: expectReplay ? "REPLAY" : "REFUSE",
+        actual: verdict.allowed ? "REPLAY" : "REFUSE",
+        why: p.why,
+        reasons: verdict.allowed ? [] : verdict.rejections.flatMap((r) => r.reasons).slice(0, 3),
+      });
+    }
+  }
+
+  return { correct, total: opts.probes.length, failures };
 }

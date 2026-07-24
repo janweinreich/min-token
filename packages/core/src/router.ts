@@ -20,6 +20,8 @@ export interface RoutingEpisode {
    * deliverable if the router estimates per class.
    */
   taskType?: string;
+  /** Provider-reported tokens this episode actually cost. */
+  generationTokens?: number;
 }
 
 export interface RequestFeatures {

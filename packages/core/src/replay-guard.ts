@@ -119,7 +119,7 @@ export function gateCompatible(input: GateInput): GateResult {
   ];
 
   // 1. Containment: every danger token the QUERY raises must be covered by memory.
-  for (const cls of ["language", "product", "packageManager", "operation"] as const) {
+  for (const cls of ["language", "product", "packageManager", "operation", "surface"] as const) {
     const q = valuesOf(Dq, cls);
     const m = expand(valuesOf(Dm, cls));
     for (const t of q) {
@@ -151,8 +151,11 @@ export function gateCompatible(input: GateInput): GateResult {
   if (qOps.size > 0 && mOps.size === 0) reject("operation_unspecified_in_memory");
 
   // 4. Polarity — embeddings are negation-blind.
+  // Polarity is read from the QUESTIONS only. Reading it from answer text made
+  // "an LLM agent ... is not reproducible" look like a negated query and refused a
+  // legitimate paraphrase. Negation matters in what was ASKED, not in prose.
   const qPol = valuesOf(Dq, "polarity").size > 0;
-  const mPol = valuesOf(Dm, "polarity").size > 0;
+  const mPol = valuesOf(danger(memory.normalizedQuestion), "polarity").size > 0;
   if (qPol !== mPol) reject("polarity_mismatch");
 
   // 5. Versions. Memory pinned + query silent is ALLOWED (memory is snapshot-pinned).

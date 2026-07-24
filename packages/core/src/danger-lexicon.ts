@@ -17,6 +17,7 @@ export type DangerClass =
   | "packageManager"
   | "operation"
   | "descriptiveOperation"
+  | "surface"
   | "polarity"
   | "temporal"
   | "version"
@@ -75,7 +76,21 @@ const TEMPORAL = ["latest", "current", "newest", "today", "now", "recent", "pric
 
 const PERSONAL = ["my account", "my workspace", "our private", "for user", "my org"] as const;
 
-const ACTION_INTENT = ["delete", "publish", "send", "deploy", "drop", "revoke", "purge"] as const;
+/**
+ * Verbs implying an EXTERNAL SIDE EFFECT. "send" was removed after it blocked
+ * "what header do I send to authenticate" — sending a header is describing a
+ * request, not mutating the world. Over-broad action detection costs replay
+ * recall while buying no safety.
+ */
+const ACTION_INTENT = ["delete", "publish", "deploy", "drop", "revoke", "purge", "uninstall"] as const;
+
+/**
+ * Protocol / API surface. Added after a measured FALSE REPLAY: "which port does
+ * the Actian REST API listen on" was served by the gRPC memory, because nothing
+ * in the lexicon distinguished the two surfaces. This is the precision direction,
+ * so it matters more than the recall failures above.
+ */
+const SURFACES = ["grpc", "rest", "graphql", "http", "https", "websocket", "sse", "cli", "sdk", "ui"] as const;
 
 /**
  * DIRECTED coverage: memory value -> query values it may serve.
@@ -115,6 +130,7 @@ const WORD_SETS: Array<[DangerClass, readonly string[]]> = [
   ["packageManager", PACKAGE_MANAGERS],
   ["operation", OPERATIONS],
   ["descriptiveOperation", DESCRIPTIVE_OPERATIONS],
+  ["surface", SURFACES],
   ["polarity", POLARITY],
   ["temporal", TEMPORAL],
 ];
