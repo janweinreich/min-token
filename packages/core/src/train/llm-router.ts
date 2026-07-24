@@ -16,12 +16,14 @@
  * The deterministic router costs ZERO, so this is an addition, not a replacement.
  * Its value is generalising to questions the keyword classifier has no class for.
  */
-import { LADDER, ROUTER_MODEL } from "./ladder.js";
+import { LADDER, ROUTER_MAX_TOKENS, ROUTER_MODEL } from "./ladder.js";
 import type { ClassRule } from "./distil.js";
 
 export interface RouterDecision {
   model: string;
   reason: string;
+  /** Whether the prompt driving this decision was model-written or built in. */
+  promptSource?: "synthesized" | "builtin";
   /** How the choice was reached. `fallback` means the LLM did not give a usable answer. */
   source: "llm" | "fallback";
   inputTokens: number;
@@ -74,16 +76,44 @@ export async function routeWithLlm(
   rules: ClassRule[],
   call: RouterCall,
   fallbackModel: string,
+  /**
+   * The prompt the REFERENCE MODEL wrote from the training pairs. When absent
+   * we fall back to the built-in template, so the router works before training
+   * has ever run.
+   */
+  synthesizedPrompt?: string,
 ): Promise<RouterDecision> {
   const t0 = Date.now();
   const rung = LADDER.find((r) => r.id === ROUTER_MODEL);
   try {
-    const r = await call(ROUTER_MODEL, buildRouterPrompt(rules), question, 60);
-    // Strip a markdown fence first — haiku reliably wraps JSON in ```json.
-    const cleaned = r.text.replace(/```(?:json)?/gi, "");
-    const m = /\{[\s\S]*?\}/.exec(cleaned);
-    const parsed = m ? (JSON.parse(m[0]) as { model?: unknown; why?: unknown }) : null;
-    const picked = typeof parsed?.model === "string" ? parsed.model.trim() : "";
+    const system = synthesizedPrompt?.trim() || buildRouterPrompt(rules);
+
+    // Retry an UNUSABLE-but-successful response, not only a thrown one.
+    // Measured: gpt-5-nano intermittently returns a 200 with an empty text
+    // block. That does not throw, so a throw-only retry never fires and the
+    // request silently degrades to the fallback model — which looks like the
+    // router made a worse choice rather than like it never answered.
+    let r = { text: "", inputTokens: 0, outputTokens: 0 };
+    let picked = "";
+    let parsed: { model?: unknown; why?: unknown } | null = null;
+    for (let attempt = 0; attempt < 2 && !picked; attempt++) {
+      const got = await call(ROUTER_MODEL, system, question, ROUTER_MAX_TOKENS);
+      // Tokens from a failed attempt still count — we were billed for them.
+      r = {
+        text: got.text,
+        inputTokens: r.inputTokens + got.inputTokens,
+        outputTokens: r.outputTokens + got.outputTokens,
+      };
+      // Strip a markdown fence first — some models wrap JSON in ```json.
+      const cleaned = got.text.replace(/```(?:json)?/gi, "");
+      const m = /\{[\s\S]*?\}/.exec(cleaned);
+      try {
+        parsed = m ? (JSON.parse(m[0]) as { model?: unknown; why?: unknown }) : null;
+      } catch {
+        parsed = null;
+      }
+      picked = typeof parsed?.model === "string" ? parsed.model.trim() : "";
+    }
 
     // Bounded to the ladder. A router that can name any string is a router that
     // can be talked into naming an expensive one — or a nonexistent one.
@@ -96,8 +126,11 @@ export async function routeWithLlm(
         ? typeof parsed?.why === "string"
           ? parsed.why.slice(0, 60)
           : "chosen by router"
-        : `router returned "${picked.slice(0, 24)}" which is not on the ladder`,
+        : picked
+          ? `router returned "${picked.slice(0, 24)}" which is not on the ladder`
+          : "router returned nothing usable twice",
       source: valid ? "llm" : "fallback",
+      promptSource: synthesizedPrompt?.trim() ? "synthesized" : "builtin",
       inputTokens: r.inputTokens,
       outputTokens: r.outputTokens,
       costUsd: cost,
@@ -110,6 +143,7 @@ export async function routeWithLlm(
       model: fallbackModel,
       reason: `router unavailable (${String(e).slice(0, 40)})`,
       source: "fallback",
+      promptSource: synthesizedPrompt?.trim() ? "synthesized" : "builtin",
       inputTokens: 0,
       outputTokens: 0,
       costUsd: 0,

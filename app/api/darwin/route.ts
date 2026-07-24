@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runUserPrompt } from "@/engine/loop";
+import { runCoreUserPrompt } from "@/engine/core-loop";
 import { newChatSession } from "@/engine/seed";
 import { getState, resetState, setState } from "@/lib/store";
 import { toShellState } from "@/shell/map";
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
         if (!body.question?.trim()) {
           return NextResponse.json({ error: "Question is required." }, { status: 400 });
         }
-        state = setState((await runUserPrompt(state, body.question)).state);
+        state = setState((await runCoreUserPrompt(state, body.question)).state);
         break;
       }
       case "new-chat": {

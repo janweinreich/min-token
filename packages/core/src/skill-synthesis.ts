@@ -89,6 +89,16 @@ export function summarizeEpisodes(
   return out;
 }
 
+/** Mirrors ClassRule in train/distil.ts, kept structural so core does not depend on train/. */
+export interface DistilledRule {
+  taskType: string;
+  recommended: string;
+  n: number;
+  support: number;
+  meanSavingPct: number;
+  confident: boolean;
+}
+
 export interface SkillInput {
   policyVersion: number;
   policy: RoutingPolicy;
@@ -97,6 +107,9 @@ export interface SkillInput {
   holdout?: { before: AggregateMetrics; after: AggregateMetrics };
   qualityFloor: number;
   generatedAt: string;
+  /** Distilled by training mode. Rendered here so regeneration never drops it. */
+  distilled?: DistilledRule[];
+  referenceModel?: string;
 }
 
 function diffPolicy(a: RoutingPolicy, b: RoutingPolicy): string[] {
@@ -106,6 +119,53 @@ function diffPolicy(a: RoutingPolicy, b: RoutingPolicy): string[] {
 }
 
 /** Compile the policy + evidence into the routing skill. */
+/**
+ * The distilled table, rendered by the SAME writer that regenerates the rest of
+ * the skill.
+ *
+ * It used to be appended by scripts/train-router.ts after the fact, which meant
+ * the next live interaction regenerated the file and silently deleted it — the
+ * agent erasing its own training. A skill with two writers and one of them
+ * truncating is worse than a skill with no training section, because it looks
+ * like the training never ran.
+ */
+function distilledSection(rules: DistilledRule[], referenceModel: string): string[] {
+  if (rules.length === 0) return [];
+  const L: string[] = [];
+  L.push("## Distilled model choice (training mode)");
+  L.push("");
+  L.push(
+    `Learned by having **${referenceModel}** answer each question, having every cheaper ` +
+      `model answer it too, and then having ${referenceModel} judge which cheap answers were ` +
+      `good enough to ship. The cheapest accepted model is the right route.`,
+  );
+  L.push("");
+  L.push("| task class | n | use this model | accepted on | mean cost saving |");
+  L.push("|---|---:|---|---:|---:|");
+  for (const r of rules) {
+    L.push(
+      `| ${r.taskType} | ${r.n} | \`${r.recommended}\`` +
+        `${r.confident ? "" : " _(too few examples — held at the reference)_"} ` +
+        `| ${(r.support * 100).toFixed(0)}% | ${r.meanSavingPct.toFixed(0)}% |`,
+    );
+  }
+  L.push("");
+  L.push(
+    "A model is only recommended for a class when it was accepted on a **majority** of that " +
+      "class. Cheapest-ever-accepted would overfit to one lucky question and route the whole " +
+      "class to a model that usually fails.",
+  );
+  L.push("");
+  L.push(
+    "**These rules are applied as a lookup, not read by a model.** Measured over 8 questions, " +
+      "paying a cheap model to read this table at request time cost 4,404 tokens more than it " +
+      "saved (0/8 wins): its overhead is fixed per request while its saving scales with answer " +
+      "length. See `artifacts/router-overhead.json`.",
+  );
+  L.push("");
+  return L;
+}
+
 export function synthesizeRoutingSkill(input: SkillInput): string {
   const p = input.policy;
   const ev = summarizeEpisodes(input.episodes, p);
@@ -222,6 +282,8 @@ export function synthesizeRoutingSkill(input: SkillInput): string {
     }
     L.push("");
   }
+
+  L.push(...distilledSection(input.distilled ?? [], input.referenceModel ?? "claude-sonnet-5"));
 
   L.push("## Rules that are not negotiable");
   L.push("");

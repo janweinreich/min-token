@@ -15,7 +15,7 @@ import { classifyTask } from "../packages/core/src/features.js";
 import { synthesizeRoutingSkill, type EpisodeRecord } from "../packages/core/src/skill-synthesis.js";
 import { routeWithLlm } from "../packages/core/src/train/llm-router.js";
 import { applyRules } from "../packages/core/src/train/apply-rules.js";
-import { ROUTER_MODEL } from "../packages/core/src/train/ladder.js";
+import { REFERENCE_MODEL, ROUTER_MODEL } from "../packages/core/src/train/ladder.js";
 import type { ClassRule } from "../packages/core/src/train/distil.js";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import {
@@ -43,12 +43,19 @@ export const MEASURED = {
   strongTokens: 15291,
   leanTokens: 6619,
   cases: 20,
+  /**
+   * Cost of the always-strong baseline PER CASE, at Pioneer's published
+   * claude-sonnet-5 rate ($2/$10 per MTok) on the measured 765-token average
+   * with the measured 62/38 input/output split from the benchmark run.
+   * Stated as a rate, not a guess, so the saving figure is auditable.
+   */
+  strongCostPerCase: (765 * 0.62 * 2 + 765 * 0.38 * 10) / 1_000_000,
 };
 
 export interface Agent {
   deps: PipelineDeps;
   episodes: RoutingEpisode[];
-  session: { asks: number; spent: number; avoidedEst: number; replays: number };
+  session: { asks: number; spent: number; avoidedEst: number; replays: number; costUsd: number; avoidedUsdEst: number };
   /** How many of the episodes came from the committed measurement, not this session. */
   seeded: number;
   ready: Promise<void>;
@@ -63,6 +70,9 @@ export interface Agent {
  * policy and writes it down as a skill" literally true rather than aspirational.
  */
 export async function writeSkill(a: Agent): Promise<string> {
+  // Carry the distilled rules into every regeneration. Without this the live
+  // agent overwrites the training table on the next interaction.
+  const distilled = (await distilledRules()) ?? [];
   const records: EpisodeRecord[] = a.episodes.map((e) => ({
     similarity: e.similarity,
     route: e.route,
@@ -77,6 +87,8 @@ export async function writeSkill(a: Agent): Promise<string> {
     episodes: records,
     qualityFloor: 0.9,
     generatedAt: new Date().toISOString(),
+    distilled,
+    referenceModel: REFERENCE_MODEL,
   });
   await mkdir("skills/routing", { recursive: true });
   await writeFile("skills/routing/SKILL.md", md + "\n", "utf8");
@@ -112,7 +124,7 @@ function build(): Agent {
       episodes: [],
     },
     episodes: [],
-    session: { asks: 0, spent: 0, avoidedEst: 0, replays: 0 },
+    session: { asks: 0, spent: 0, avoidedEst: 0, replays: 0, costUsd: 0, avoidedUsdEst: 0 },
     seeded: 0,
     ready: Promise.resolve(),
   };
@@ -240,6 +252,18 @@ async function approve(a: Agent, question: string, answer: string) {
   ]);
 }
 
+/** The router prompt the reference model wrote. Absent until `pnpm train` runs. */
+let cachedPrompt: string | null | undefined;
+async function synthesizedPrompt(): Promise<string | null> {
+  if (cachedPrompt !== undefined) return cachedPrompt;
+  try {
+    cachedPrompt = (await readFile("artifacts/router-prompt.md", "utf8")).trim() || null;
+  } catch {
+    cachedPrompt = null;
+  }
+  return cachedPrompt;
+}
+
 /** Distilled rules, loaded once. Absent until `pnpm train` has been run. */
 let cachedRules: ClassRule[] | null | undefined;
 async function distilledRules(): Promise<ClassRule[] | null> {
@@ -254,6 +278,21 @@ async function distilledRules(): Promise<ClassRule[] | null> {
 }
 
 async function routerCall(modelId: string, system: string, user: string, maxOut: number) {
+  // Retry once. A transient provider blip on the ROUTER silently degrades every
+  // routed request to the fallback model, which on stage reads as "the learned
+  // router does not work" — the failure is invisible except as a worse choice.
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await routerCallOnce(modelId, system, user, maxOut);
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr;
+}
+
+async function routerCallOnce(modelId: string, system: string, user: string, maxOut: number) {
   const base = process.env.PIONEER_BASE_URL ?? "https://api.pioneer.ai/v1";
   const res = await fetch(`${base}/messages`, {
     method: "POST",
@@ -284,15 +323,66 @@ async function routerCall(modelId: string, system: string, user: string, maxOut:
  */
 export type RouterMode = "off" | "learned" | "llm";
 
+/**
+ * Everything the page needs BEFORE the first question. Without this the panel
+ * reads its counts off the last response, so on a cold page it renders "no
+ * distilled rules yet" while four rules sit on disk — a demo that understates
+ * itself for the first thirty seconds.
+ */
+export interface LearningEvent {
+  at: string;
+  question: string;
+  taskType: string;
+  winner: string | null;
+  savingPct: number;
+  trainingSetSize: number;
+  changes: Array<{ taskType: string; from: string | null; to: string; n: number; kind: string }>;
+  promptRewritten: boolean;
+}
+
+/** The agent's own history. Re-read each time so it reflects live training. */
+async function learningLog(): Promise<LearningEvent[]> {
+  try {
+    return (await readFile("artifacts/learning-log.jsonl", "utf8"))
+      .split("\n")
+      .filter((l) => l.trim())
+      .map((l) => JSON.parse(l) as LearningEvent);
+  } catch {
+    return [];
+  }
+}
+
+export async function status() {
+  const a = agent();
+  await a.ready;
+  const rules = await distilledRules();
+  const log = await learningLog();
+  return {
+    learningLog: log.slice(-12).reverse(),
+    lessonsLearned: log.length,
+    promptVersion: log.filter((e) => e.promptRewritten).length,
+    distilledRulesAvailable: rules?.length ?? 0,
+    routerPromptSynthesized: (await synthesizedPrompt()) !== null,
+    routerModel: ROUTER_MODEL,
+    episodeCount: a.episodes.length,
+    seededEpisodes: a.seeded,
+    measured: MEASURED,
+    learned: learned(a),
+    policyVersion: 1,
+  };
+}
+
 export async function handle(question: string, autoApprove: boolean, mode: RouterMode = "off") {
   const a = agent();
   await a.ready;
 
   const rules = mode === "off" ? null : await distilledRules();
+  const prompt = mode === "llm" ? await synthesizedPrompt() : null;
   const llmRouter =
     rules && rules.length
       ? mode === "llm"
-        ? (q: string, fallback: string) => routeWithLlm(q, rules, routerCall, fallback)
+        ? (q: string, fallback: string) =>
+            routeWithLlm(q, rules, routerCall, fallback, prompt ?? undefined)
         : (q: string, fallback: string) => {
             const r = applyRules(classifyTask(q), rules, fallback);
             return Promise.resolve({
@@ -314,9 +404,14 @@ export async function handle(question: string, autoApprove: boolean, mode: Route
   // number is the committed benchmark comparison.
   const strongEst = MEASURED.strongTokensPerCase;
 
+  const spentUsd = r.usage.estimatedCostUsd ?? 0;
+  const baselineUsd = MEASURED.strongCostPerCase;
+
   a.session.asks++;
   a.session.spent += spent;
   a.session.avoidedEst += Math.max(0, strongEst - spent);
+  a.session.costUsd += spentUsd;
+  a.session.avoidedUsdEst += Math.max(0, baselineUsd - spentUsd);
   if (replayed) a.session.replays++;
 
   if (!replayed && r.routing) {
@@ -384,12 +479,28 @@ export async function handle(question: string, autoApprove: boolean, mode: Route
     ...r,
     tools,
     strongEstimate: strongEst,
+    // The comparison the whole product is about, computed server-side so the
+    // UI cannot quietly change the arithmetic behind a headline number.
+    savings: {
+      tokensUsed: spent,
+      tokensBaseline: strongEst,
+      tokensSaved: Math.max(0, strongEst - spent),
+      usdUsed: spentUsd,
+      usdBaseline: baselineUsd,
+      usdSaved: Math.max(0, baselineUsd - spentUsd),
+      pct: strongEst > 0 ? Math.round(((strongEst - spent) / strongEst) * 100) : 0,
+      baselineModel: "claude-sonnet-5",
+    },
     session: a.session,
     learned: learned(a),
     measured: MEASURED,
     policyVersion: 1,
     routerModel: ROUTER_MODEL,
     distilledRulesAvailable: (await distilledRules())?.length ?? 0,
+    routerPromptSynthesized: (await synthesizedPrompt()) !== null,
+    learningLog: (await learningLog()).slice(-12).reverse(),
+    lessonsLearned: (await learningLog()).length,
+    promptVersion: (await learningLog()).filter((e) => e.promptRewritten).length,
     episodeCount: a.episodes.length,
     seededEpisodes: a.seeded,
   };

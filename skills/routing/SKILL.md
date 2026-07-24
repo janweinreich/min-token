@@ -1,6 +1,6 @@
 # Routing Skill v1
 
-> Generated 2026-07-24T21:58:36.693Z from policy v1. **Do not edit by hand** — this file is recompiled on every policy promotion, and every rule below is derived from a policy parameter or from measured routing episodes.
+> Generated 2026-07-24T23:03:57.281Z from policy v1. **Do not edit by hand** — this file is recompiled on every policy promotion, and every rule below is derived from a policy parameter or from measured routing episodes.
 
 ## Goal
 
@@ -24,10 +24,25 @@ Chunks are truncated to 1200 characters. This is the highest-leverage number her
 |---|---:|---:|---:|---:|---:|---|
 | comparison | 30 | 11 | 8 | 0.44 | 275 → 847 | **skip lean** — go straight to strong |
 | explanation | 34 | 4 | 3 | 0.29 | 380 → 779 | **skip lean** — go straight to strong |
-| lookup | 95 | 50 | 45 | 0.79 | 299 → 744 | **use lean** |
-| unknown | 1 | 0 | 0 | 0.00 | – → 730 | _gathering evidence_ |
+| lookup | 95 | 50 | 46 | 0.81 | 305 → 744 | **use lean** |
+| unknown | 1 | 0 | 0 | 0.00 | – → 754 | _gathering evidence_ |
 
 Routing **comparison, explanation** straight to the strong model avoids the retry tax: a lean attempt that fails and escalates costs more than starting strong, because the repair reuses the larger context.
+
+## Distilled model choice (training mode)
+
+Learned by having **claude-sonnet-5** answer each question, having every cheaper model answer it too, and then having claude-sonnet-5 judge which cheap answers were good enough to ship. The cheapest accepted model is the right route.
+
+| task class | n | use this model | accepted on | mean cost saving |
+|---|---:|---|---:|---:|
+| comparison | 4 | `claude-haiku-4-5` | 100% | 53% |
+| explanation | 1 | `claude-sonnet-5` _(too few examples — held at the reference)_ | 100% | 0% |
+| lookup | 9 | `gpt-5-nano` | 89% | 97% |
+| unknown | 5 | `claude-haiku-4-5` | 100% | 58% |
+
+A model is only recommended for a class when it was accepted on a **majority** of that class. Cheapest-ever-accepted would overfit to one lucky question and route the whole class to a model that usually fails.
+
+**These rules are applied as a lookup, not read by a model.** Measured over 8 questions, paying a cheap model to read this table at request time cost 4,404 tokens more than it saved (0/8 wins): its overhead is fixed per request while its saving scales with answer length. See `artifacts/router-overhead.json`.
 
 ## Rules that are not negotiable
 
