@@ -189,6 +189,23 @@ export function learned(a: Agent): LearnedRow[] {
     });
 }
 
+/**
+ * An answer that says the corpus cannot support it is a correct RESPONSE but a
+ * useless MEMORY. Approving one poisons the store: the next paraphrase replays
+ * "I don't know" at zero tokens and the agent looks like it learned to be
+ * unhelpful. Observed live — a rocket question replayed a stale refusal.
+ */
+function isRefusal(answer: string): boolean {
+  const a = answer.toLowerCase();
+  return (
+    a.includes("corpus is insufficient") ||
+    a.includes("do not contain") ||
+    a.includes("does not contain") ||
+    a.includes("verified corpus does not") ||
+    a.includes("insufficient to answer")
+  );
+}
+
 /** Approve a generated answer into memory so a later paraphrase can replay it. */
 async function approve(a: Agent, question: string, answer: string) {
   const [vec] = await miniLmEmbedder.embedBatch([buildEmbeddingText(question)]);
@@ -249,7 +266,7 @@ export async function handle(question: string, autoApprove: boolean) {
       taskType: classifyTask(question),
       generationTokens: spent,
     });
-    if (autoApprove && r.answer.length > 40 && r.route !== "ABSTAIN") {
+    if (autoApprove && r.answer.length > 40 && r.route !== "ABSTAIN" && !isRefusal(r.answer)) {
       await approve(a, question, r.answer);
     }
     // The evidence changed, so the written-down skill changes with it.

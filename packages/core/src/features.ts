@@ -51,9 +51,16 @@ export function significantTerms(question: string): string[] {
     for (const v of valuesOf(d, cls)) terms.add(v);
   }
   if (terms.size === 0) {
-    // Fall back to content words so coverage is never vacuously 1.0.
+    // Fall back to content words so coverage is never vacuously 1.0 — but skip
+    // generic verbs. "build" matched the Guild docs' "build and publish" and made
+    // a rocket question look half-grounded.
+    const GENERIC = new Set([
+      "build", "create", "using", "about", "there", "which", "would", "could",
+      "should", "these", "those", "where", "makes", "making", "works", "thing",
+      "things", "something", "please", "explain", "describe", "between",
+    ]);
     for (const w of question.toLowerCase().split(/[^a-z0-9@./_-]+/)) {
-      if (w.length > 4) terms.add(w);
+      if (w.length > 4 && !GENERIC.has(w)) terms.add(w);
     }
   }
   return [...terms];

@@ -139,22 +139,17 @@ export function chooseRoute(
     };
   }
 
-  // 2. No usable evidence. Two very different situations, and conflating them is
-  //    what made the agent refuse an apple pie recipe.
-  const noEvidence = top < policy.abstainBelowContextScore && coverage < 0.5;
-  const inDomain = f.inCorpusDomain !== false;
-
-  if (noEvidence && inDomain) {
-    // Asked about the corpus, and we cannot support an answer. Do not guess: a
-    // wrong answer about a documented API is the expensive kind of wrong.
-    reasons.push(`abstain:in_domain,top=${top.toFixed(2)},coverage=${coverage.toFixed(2)}`);
-    return { ...base, route: "ABSTAIN", contextK: 0, maxOutputTokens: 0 };
-  }
-
-  if (noEvidence && !inDomain) {
-    // General question. Still answer it — and still pick the cheapest model that
-    // can, which is the whole thesis applied outside the corpus. Difficulty, not
-    // evidence, decides the route here.
+  // 2. OUT OF DOMAIN — checked before anything about retrieval.
+  //
+  // This ordering is the fix for a real failure: "how do you build a rocket"
+  // scored evidence coverage 0.50 purely because the word "build" appears in the
+  // Guild docs, so it did not look like "no evidence", fell through to the
+  // grounded path, and spent 1028 tokens on the STRONG model to say the corpus
+  // was insufficient — worse than the always-strong baseline it exists to beat.
+  //
+  // Whether a question is about the corpus is a property of the QUESTION, not of
+  // how lucky retrieval got. Decide it first.
+  if (f.inCorpusDomain === false) {
     // Difficulty from the deterministic task class and length — the same signals
     // used everywhere else, rather than a second ad-hoc classifier.
     const hard =
@@ -169,6 +164,14 @@ export function chooseRoute(
       contextK: 0,
       maxOutputTokens: hard ? policy.strongMaxOutputTokens : policy.leanMaxOutputTokens,
     };
+  }
+
+  // 3. In-domain but unsupported: we are supposed to know this and do not.
+  //    Do not guess — a wrong answer about a documented API is the expensive
+  //    kind of wrong.
+  if (top < policy.abstainBelowContextScore && coverage < 0.5) {
+    reasons.push(`abstain:in_domain,top=${top.toFixed(2)},coverage=${coverage.toFixed(2)}`);
+    return { ...base, route: "ABSTAIN", contextK: 0, maxOutputTokens: 0 };
   }
 
   // 3. Lean gate.
