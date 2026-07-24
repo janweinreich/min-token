@@ -1,35 +1,34 @@
-# BudgetDarwin
+# mintoken
 
-An agent that learns how much compute each question deserves — and refuses to pay twice for the same answer.
-
-Three mechanisms, in order of how much they save:
-
-1. **Replay** an already-approved answer when it is *provably* safe to. Zero generation tokens.
-2. **Route** to the cheapest model that can actually handle the question, per task class.
-3. **Evolve** its own routing policy against a benchmark, under a hard quality floor.
+mintoken evolves how LLM calls are routed to cut spend without losing quality.
+Every prompt checks answer memory first, routes a Pioneer cheap, mid, or premium
+tier on a miss, grounds quality with Senso, and asks Guild whether the cheaper
+policy deserves promotion. Band announces wins and Replay closes the QA loop.
 
 ```bash
 pnpm install
-cp .env.example .env.local     # add PIONEER_API_KEY
-pnpm dev                       # http://localhost:3000
+cp .env.example .env.local
+pnpm dev
 ```
 
-Ask these three, in order — they are the whole product in thirty seconds:
+Open `http://localhost:3000`. Sponsor keys are optional for the demo. Each
+adapter falls back to local answers, local Guild decisions, or cached events if
+a key is missing or a provider is unavailable.
 
-| ask | what happens |
-|---|---|
-| *What package installs the Actian JavaScript SDK?* | generates · **246 tokens** on `claude-haiku-4-5` |
-| *Which npm package do I need for Actian VectorAI from TypeScript?* | **replays · 0 tokens** (similarity 0.726) |
-| *How do I install the Actian **Python** SDK?* | **refuses to replay** — `ecosystem_conflict: js→py` |
+## Demo flow
 
-The right-hand panel shows why, for every request — including which sponsor tools actually ran.
+1. Type any question in the bottom composer. The first ask measures the
+   always-premium baseline, then runs the prompt through the active challenger.
+2. Watch Quality, Prompt cost, Saved vs premium, Activity, and Routing policy
+   update from the returned Darwin state.
+3. Ask the exact same question again. Answer memory returns the prior answer at
+   zero compute and increments Memory hits.
+4. Create another chat and switch between threads from the left sidebar.
+5. Mark Replay QA after validating the public experience.
+6. Reset to clear runtime sessions and metrics while keeping seeded memory.
 
-**Off-corpus questions are still answered, and still routed by cost.** Abstention is reserved for
-questions *about* the corpus that it cannot support — guessing about a documented API is the
-expensive kind of wrong. Anything else gets the cheapest model that fits: *"give me a recipe for
-apple pie"* goes to `claude-haiku-4-5` (214 tokens), *"compare microservices versus a monolith"*
-escalates to `claude-sonnet-5` (409), and both are marked **general knowledge** rather than dressed
-up as corpus-verified.
+The state store and runtime answer memory are process-local. They are
+intentionally ephemeral on Vercel and reset when the instance restarts.
 
 ---
 

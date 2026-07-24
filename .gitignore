@@ -4,5 +4,6 @@ node_modules/
 .env*.local
 .models/
 data/memory/*.jsonl
+src/data/answer-memory.runtime.json
 
 *.tsbuildinfo
