@@ -9,6 +9,8 @@
  * then reads at serve time.
  */
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { synthesizeRoutingSkill, type EpisodeRecord } from "../packages/core/src/skill-synthesis.js";
+import { DEFAULT_POLICY } from "../packages/core/src/policy.js";
 import { LADDER, REFERENCE_MODEL, ROUTER_MODEL } from "../packages/core/src/train/ladder.js";
 import { aggregate, distilOne, type TrainingExample, type TrainingQuestion } from "../packages/core/src/train/distil.js";
 import { LocalContextProvider } from "../packages/core/src/adapters/local-context.js";
@@ -128,32 +130,37 @@ await writeFile(
 
 // ── Append the prescriptive table to the skill ───────────────────────────────
 const skillPath = "skills/routing/SKILL.md";
-let skill = "";
-try {
-  skill = await readFile(skillPath, "utf8");
-} catch {
-  skill = "# Routing Skill\n";
-}
-const MARK = "## Distilled model choice (training mode)";
-const table = [
-  MARK,
-  "",
-  `Learned by having **${REFERENCE_MODEL}** answer each question, having every cheaper model answer it too, and then having ${REFERENCE_MODEL} judge which cheap answers were good enough to ship. The cheapest accepted model is the right route.`,
-  "",
-  "| task class | n | use this model | accepted on | mean cost saving |",
-  "|---|---:|---|---:|---:|",
-  ...rules.map(
-    (r) =>
-      `| ${r.taskType} | ${r.n} | \`${r.recommended}\`${r.confident ? "" : " _(too few examples — held at the reference)_"} | ${(r.support * 100).toFixed(0)}% | ${r.meanSavingPct.toFixed(0)}% |`,
-  ),
-  "",
-  `A model is only recommended for a class when it was accepted on a **majority** of that class. Cheapest-ever-accepted would overfit to one lucky question and route the whole class to a model that usually fails.`,
-  "",
-].join("\n");
 
-skill = skill.includes(MARK) ? skill.slice(0, skill.indexOf(MARK)) + table : skill.trimEnd() + "\n\n" + table;
+// The skill has exactly ONE writer: synthesizeRoutingSkill. This script used to
+// append its table by hand, which meant the live agent's next regeneration
+// deleted it — and, once the synthesizer learned to render the table itself, an
+// append here would have truncated the non-negotiable rules that follow it.
+// Two writers and a marker-based splice is how a file quietly loses sections.
+const episodes: EpisodeRecord[] = JSON.parse(
+  await readFile("artifacts/episodes.json", "utf8"),
+).map((e: Record<string, unknown>) => ({
+  similarity: Number(e.similarity ?? 0),
+  route: String(e.route),
+  passed: Boolean(e.passed),
+  repaired: Boolean(e.repaired),
+  taskType: String(e.taskType ?? "unknown"),
+  generationTokens: Number(e.generationTokens ?? 0),
+}));
+
 await mkdir("skills/routing", { recursive: true });
-await writeFile(skillPath, skill, "utf8");
+await writeFile(
+  skillPath,
+  synthesizeRoutingSkill({
+    policyVersion: 1,
+    policy: DEFAULT_POLICY,
+    episodes,
+    qualityFloor: 0.9,
+    generatedAt: new Date().toISOString(),
+    distilled: rules,
+    referenceModel: REFERENCE_MODEL,
+  }) + "\n",
+  "utf8",
+);
 
 const totalRef = examples.reduce((s, e) => s + e.referenceCostUsd, 0);
 const totalBest = examples.reduce(

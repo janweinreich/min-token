@@ -15,7 +15,7 @@ import { classifyTask } from "../packages/core/src/features.js";
 import { synthesizeRoutingSkill, type EpisodeRecord } from "../packages/core/src/skill-synthesis.js";
 import { routeWithLlm } from "../packages/core/src/train/llm-router.js";
 import { applyRules } from "../packages/core/src/train/apply-rules.js";
-import { ROUTER_MODEL } from "../packages/core/src/train/ladder.js";
+import { REFERENCE_MODEL, ROUTER_MODEL } from "../packages/core/src/train/ladder.js";
 import type { ClassRule } from "../packages/core/src/train/distil.js";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import {
@@ -63,6 +63,9 @@ export interface Agent {
  * policy and writes it down as a skill" literally true rather than aspirational.
  */
 export async function writeSkill(a: Agent): Promise<string> {
+  // Carry the distilled rules into every regeneration. Without this the live
+  // agent overwrites the training table on the next interaction.
+  const distilled = (await distilledRules()) ?? [];
   const records: EpisodeRecord[] = a.episodes.map((e) => ({
     similarity: e.similarity,
     route: e.route,
@@ -77,6 +80,8 @@ export async function writeSkill(a: Agent): Promise<string> {
     episodes: records,
     qualityFloor: 0.9,
     generatedAt: new Date().toISOString(),
+    distilled,
+    referenceModel: REFERENCE_MODEL,
   });
   await mkdir("skills/routing", { recursive: true });
   await writeFile("skills/routing/SKILL.md", md + "\n", "utf8");
@@ -283,6 +288,27 @@ async function routerCall(modelId: string, system: string, user: string, maxOut:
  *              comparison is visible rather than asserted.
  */
 export type RouterMode = "off" | "learned" | "llm";
+
+/**
+ * Everything the page needs BEFORE the first question. Without this the panel
+ * reads its counts off the last response, so on a cold page it renders "no
+ * distilled rules yet" while four rules sit on disk — a demo that understates
+ * itself for the first thirty seconds.
+ */
+export async function status() {
+  const a = agent();
+  await a.ready;
+  const rules = await distilledRules();
+  return {
+    distilledRulesAvailable: rules?.length ?? 0,
+    routerModel: ROUTER_MODEL,
+    episodeCount: a.episodes.length,
+    seededEpisodes: a.seeded,
+    measured: MEASURED,
+    learned: learned(a),
+    policyVersion: 1,
+  };
+}
 
 export async function handle(question: string, autoApprove: boolean, mode: RouterMode = "off") {
   const a = agent();

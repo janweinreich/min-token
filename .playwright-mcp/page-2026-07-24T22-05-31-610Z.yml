@@ -1,0 +1,72 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]: GOAL minimize generation tokens subject to quality ≥ 0.90
+      - generic [ref=e5]:
+        - text: measured benchmark ·
+        - generic [ref=e6]: router 0.947 / 12501
+        - text: vs
+        - generic [ref=e7]: always-strong 0.937 / 15291
+      - generic [ref=e8]: policy v1 · 156 episodes
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: "Ask these three in order to see the whole loop:"
+          - list [ref=e13]:
+            - listitem [ref=e14]: a question → generates
+            - listitem [ref=e15]: a paraphrase → replays at 0 tokens
+            - listitem [ref=e16]: the Python variant → refuses to replay
+        - generic [ref=e17]:
+          - textbox "ask about Actian, Pioneer or Guild…" [ref=e18]
+          - button "ask" [disabled] [ref=e19]
+        - generic [ref=e20]:
+          - generic [ref=e21]: training mode
+          - button "off" [ref=e22] [cursor=pointer]
+          - button "apply learned rules · 0 tok" [ref=e23] [cursor=pointer]
+          - button "claude-haiku-4-5 reads the skill · ~470 tok" [ref=e24] [cursor=pointer]
+          - generic [ref=e25]: "4 distilled rules learned · measured: paying a model to read them lost 4,404 tokens over 8 questions, so applying them as a lookup is the default"
+        - generic [ref=e26]:
+          - button "What package installs the Actian JavaScript …" [ref=e27] [cursor=pointer]
+          - button "Which npm package do I need for Actian Vecto…" [ref=e28] [cursor=pointer]
+          - button "How do I install the Actian Python SDK?" [ref=e29] [cursor=pointer]
+      - complementary [ref=e30]:
+        - heading "What just happened" [level=2] [ref=e31]
+        - paragraph [ref=e32]: Ask something to see how the tokens were saved.
+        - heading "Sponsor tools on this request" [level=2] [ref=e33]
+        - paragraph [ref=e34]: —
+        - heading "The loop — refines every interaction" [level=2] [ref=e35]
+        - table [ref=e36]:
+          - rowgroup [ref=e37]:
+            - row [ref=e38]:
+              - columnheader "task class" [ref=e39]
+              - columnheader "lean tried" [ref=e40]
+              - columnheader "clean" [ref=e41]
+              - columnheader "confidence" [ref=e42]
+              - columnheader "routing" [ref=e43]
+          - rowgroup [ref=e44]:
+            - row [ref=e45]:
+              - cell "comparison" [ref=e46]
+              - cell "11" [ref=e47]
+              - cell "8" [ref=e48]
+              - cell "0.44" [ref=e49]
+              - cell "skip lean" [ref=e50]
+            - row [ref=e51]:
+              - cell "explanation" [ref=e52]
+              - cell "4" [ref=e53]
+              - cell "3" [ref=e54]
+              - cell "0.29" [ref=e55]
+              - cell "skip lean" [ref=e56]
+            - row [ref=e57]:
+              - cell "lookup" [ref=e58]
+              - cell "47" [ref=e59]
+              - cell "45" [ref=e60]
+              - cell "0.85" [ref=e61]
+              - cell "use lean" [ref=e62]
+        - heading [level=2] [ref=e63]:
+          - text: The skill it wrote for itself
+          - button "show" [ref=e64] [cursor=pointer]
+        - paragraph [ref=e65]:
+          - text: Recompiled from the evidence above on every interaction, and verified against the real router before it is written.
+          - code [ref=e66]: skills/routing/SKILL.md
+  - button "Open Next.js Dev Tools" [ref=e72] [cursor=pointer]
+  - alert [ref=e76]

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Rejection = { memoryId: string; reasons: string[] };
 type Learned = { taskType: string; leanTried: number; cleanWins: number; lcb: number; verdict: string };
@@ -60,6 +60,16 @@ export default function Page() {
   // variant loses 4,496 tokens over 8 questions — it is offered so the
   // comparison is visible on stage, not because it wins.
   const [routerMode, setRouterMode] = useState<"off" | "learned" | "llm">("off");
+  // Loaded on mount so a cold page already knows what the agent has learned,
+  // instead of reading its counts off a response that has not happened yet.
+  const [status, setStatus] = useState<Partial<Res> | null>(null);
+
+  useEffect(() => {
+    fetch("/api/status")
+      .then((r) => r.json())
+      .then(setStatus)
+      .catch(() => {});
+  }, []);
   const last = log[log.length - 1]?.r;
 
   async function send(question: string) {
@@ -82,7 +92,8 @@ export default function Page() {
     }
   }
 
-  const m = last?.measured;
+  const view = last ?? status;
+  const m = view?.measured;
   const savedPct =
     last && last.strongEstimate > 0
       ? Math.round(((last.strongEstimate - last.usage.totalGenerationTokens) / last.strongEstimate) * 100)
@@ -102,7 +113,7 @@ export default function Page() {
             <span className="dim">always-strong {m.strongQuality.toFixed(3)} / {m.strongTokens}</span>
           </div>
         )}
-        <div className="pill">policy v1 · {last?.episodeCount ?? 0} episodes</div>
+        <div className="pill">policy v1 · {view?.episodeCount ?? 0} episodes</div>
       </header>
 
       <div className="cols">
@@ -155,12 +166,12 @@ export default function Page() {
                 onClick={() => setRouterMode(mo)}
                 disabled={busy}
               >
-                {mo === "off" ? "off" : mo === "learned" ? "apply learned rules · 0 tok" : `${last?.routerModel ?? "cheap model"} reads the skill · ~470 tok`}
+                {mo === "off" ? "off" : mo === "learned" ? "apply learned rules · 0 tok" : `${view?.routerModel ?? "cheap model"} reads the skill · ~470 tok`}
               </button>
             ))}
             <span className="tiny">
-              {last?.distilledRulesAvailable
-                ? `${last.distilledRulesAvailable} distilled rules · measured: paying a model to read them lost 4,496 tokens over 8 questions, so applying them as a lookup is the default`
+              {view?.distilledRulesAvailable
+                ? `${view.distilledRulesAvailable} distilled rules learned · measured: paying a model to read them lost 4,404 tokens over 8 questions, so applying them as a lookup is the default`
                 : "run `pnpm train` first — no distilled rules yet"}
             </span>
           </div>
@@ -306,7 +317,7 @@ export default function Page() {
           )}
 
           <h2>The loop — refines every interaction</h2>
-          {last?.learned.length ? (
+          {view?.learned?.length ? (
             <table>
               <thead>
                 <tr>
@@ -318,7 +329,7 @@ export default function Page() {
                 </tr>
               </thead>
               <tbody>
-                {last.learned.map((r) => (
+                {view.learned!.map((r) => (
                   <tr key={r.taskType}>
                     <td>{r.taskType}</td>
                     <td>{r.leanTried}</td>
