@@ -23,6 +23,8 @@ interface Res {
     leanTokensPerCase: number; strongTokensPerCase: number; cases: number;
   };
   episodeCount: number;
+  grounded?: boolean;
+  tools: { sponsor: string; what: string; live: boolean; detail: string }[];
   error?: string;
 }
 
@@ -107,6 +109,7 @@ export default function Page() {
                 <span className="badge" style={{ background: ROUTE_COLOR[r.route] ?? "#64748b" }}>
                   {r.route.replace(/_/g, " ")}
                 </span>
+                {r.grounded === false && <span className="ungrounded">general knowledge</span>}
                 {r.selectedModelId && <span className="model">{r.selectedModelId}</span>}
                 <span className={r.usage.totalGenerationTokens === 0 ? "tok zero" : "tok"}>
                   {r.usage.totalGenerationTokens} tokens
@@ -218,6 +221,29 @@ export default function Page() {
                 </div>
               </li>
             </ol>
+          )}
+
+          {last?.grounded === false && (
+            <p className="ungroundedNote">
+              Outside the verified corpus, so this was answered from the model&apos;s own knowledge and
+              carries no citations. It still took the <b>cheapest model that fits the question</b> —
+              refusing would have been unhelpful rather than safe.
+            </p>
+          )}
+
+          <h2>Sponsor tools on this request</h2>
+          {last ? (
+            <ul className="tools">
+              {last.tools.map((t) => (
+                <li key={t.sponsor + t.what}>
+                  <span className={t.live ? "dot live" : "dot"} />
+                  <b>{t.sponsor}</b> <span className="dim">{t.what}</span>
+                  <div className="dim tiny">{t.detail}</div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="dim">—</p>
           )}
 
           <h2>The loop — refines every interaction</h2>

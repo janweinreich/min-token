@@ -22,7 +22,14 @@ Ask these three, in order — they are the whole product in thirty seconds:
 | *Which npm package do I need for Actian VectorAI from TypeScript?* | **replays · 0 tokens** (similarity 0.726) |
 | *How do I install the Actian **Python** SDK?* | **refuses to replay** — `ecosystem_conflict: js→py` |
 
-The right-hand panel shows why, for every request.
+The right-hand panel shows why, for every request — including which sponsor tools actually ran.
+
+**Off-corpus questions are still answered, and still routed by cost.** Abstention is reserved for
+questions *about* the corpus that it cannot support — guessing about a documented API is the
+expensive kind of wrong. Anything else gets the cheapest model that fits: *"give me a recipe for
+apple pie"* goes to `claude-haiku-4-5` (214 tokens), *"compare microservices versus a monolith"*
+escalates to `claude-sonnet-5` (409), and both are marked **general knowledge** rather than dressed
+up as corpus-verified.
 
 ---
 

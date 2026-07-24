@@ -32,11 +32,15 @@ export interface RequestFeatures {
   /** Danger tokens the question raises — used for evidence-coverage abstention. */
   queryTerms: string[];
   chunks: RetrievedChunk[];
+  /** False when the question was never about the corpus at all. */
+  inCorpusDomain?: boolean;
 }
 
 export interface RouteDecision {
   route: Route;
   reasons: string[];
+  /** False => answered from the model's own knowledge, not the verified corpus. */
+  grounded: boolean;
   contextK: number;
   maxOutputTokens: number;
   /** True when lean was chosen by exploration rather than by earned history. */
@@ -113,6 +117,7 @@ export function chooseRoute(
 
   const base = {
     reasons,
+    grounded: true,
     exploratory: false,
     leanSuccessLCB: lcb,
     crossSourceGap: gap,
@@ -134,11 +139,36 @@ export function chooseRoute(
     };
   }
 
-  // 2. Abstention is about EVIDENCE COVERAGE, not a single top score. A question
-  //    can score low overall while the one fact it needs is plainly present.
-  if (top < policy.abstainBelowContextScore && coverage < 0.5) {
-    reasons.push(`abstain:top=${top.toFixed(2)},coverage=${coverage.toFixed(2)}`);
+  // 2. No usable evidence. Two very different situations, and conflating them is
+  //    what made the agent refuse an apple pie recipe.
+  const noEvidence = top < policy.abstainBelowContextScore && coverage < 0.5;
+  const inDomain = f.inCorpusDomain !== false;
+
+  if (noEvidence && inDomain) {
+    // Asked about the corpus, and we cannot support an answer. Do not guess: a
+    // wrong answer about a documented API is the expensive kind of wrong.
+    reasons.push(`abstain:in_domain,top=${top.toFixed(2)},coverage=${coverage.toFixed(2)}`);
     return { ...base, route: "ABSTAIN", contextK: 0, maxOutputTokens: 0 };
+  }
+
+  if (noEvidence && !inDomain) {
+    // General question. Still answer it — and still pick the cheapest model that
+    // can, which is the whole thesis applied outside the corpus. Difficulty, not
+    // evidence, decides the route here.
+    // Difficulty from the deterministic task class and length — the same signals
+    // used everywhere else, rather than a second ad-hoc classifier.
+    const hard =
+      f.taskType === "comparison" ||
+      f.taskType === "explanation" ||
+      f.questionChars > policy.leanMaxQuestionChars;
+    reasons.push(`ungrounded:${hard ? "complex" : "simple"}_general_question`);
+    return {
+      ...base,
+      grounded: false,
+      route: hard ? "STRONG_RAG" : "LEAN_RAG",
+      contextK: 0,
+      maxOutputTokens: hard ? policy.strongMaxOutputTokens : policy.leanMaxOutputTokens,
+    };
   }
 
   // 3. Lean gate.

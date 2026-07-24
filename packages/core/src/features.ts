@@ -59,7 +59,32 @@ export function significantTerms(question: string): string[] {
   return [...terms];
 }
 
-export function extractFeatures(question: string, chunks: RetrievedChunk[]): RequestFeatures {
+/**
+ * Does this question claim to be ABOUT the corpus?
+ *
+ * This is what separates the two very different reasons to have no evidence:
+ *
+ *   in-domain + no evidence  -> we are supposed to know this and do not. ABSTAIN;
+ *                               guessing about a documented API is how you ship a
+ *                               confidently wrong answer.
+ *   out-of-domain            -> it was never a corpus question. Refusing "give me
+ *                               a recipe" is not safety, it is just unhelpful —
+ *                               and it throws away the cheap-model saving on
+ *                               exactly the questions that are cheapest to serve.
+ */
+export function mentionsCorpusDomain(question: string, corpusTerms: Set<string>): boolean {
+  const d = danger(question);
+  for (const cls of ["product", "identifier"] as const) {
+    for (const v of valuesOf(d, cls)) if (corpusTerms.has(v)) return true;
+  }
+  return false;
+}
+
+export function extractFeatures(
+  question: string,
+  chunks: RetrievedChunk[],
+  corpusTerms?: Set<string>,
+): RequestFeatures {
   return {
     questionChars: question.length,
     taskType: classifyTask(question),
@@ -67,5 +92,6 @@ export function extractFeatures(question: string, chunks: RetrievedChunk[]): Req
     actionIntent: hasActionIntent(question) || isPersonalized(question),
     queryTerms: significantTerms(question),
     chunks,
+    inCorpusDomain: corpusTerms ? mentionsCorpusDomain(question, corpusTerms) : true,
   };
 }

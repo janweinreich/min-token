@@ -84,6 +84,8 @@ export interface AskResponse {
   providerRequestId?: string;
   usage: Usage;
   memory: MemoryDecision;
+  /** False when answered from model knowledge rather than the verified corpus. */
+  grounded?: boolean;
   /** Why the router chose what it chose — rendered in the trace. */
   routing?: RouteDecision;
   latencyMs: number;
@@ -102,6 +104,8 @@ export interface PipelineDeps {
   /** Past episodes feeding the per-task-class lean success estimate. */
   episodes?: RoutingEpisode[];
   benchmarkMode?: boolean;
+  /** Products/identifiers the corpus covers, so out-of-domain questions are not refused. */
+  corpusTerms?: Set<string>;
   /**
    * Override the router for a bootstrap probe.
    *
@@ -236,7 +240,7 @@ export async function ask(deps: PipelineDeps, input: AskInput): Promise<AskRespo
 
   // ── Route selection. Deterministic; no model decides which model to call. ──
   let routing = deps.routingPolicy
-    ? chooseRoute(extractFeatures(input.question, retrieved), deps.routingPolicy, deps.episodes ?? [], {
+    ? chooseRoute(extractFeatures(input.question, retrieved, deps.corpusTerms), deps.routingPolicy, deps.episodes ?? [], {
         benchmarkMode: deps.benchmarkMode ?? true,
       })
     : undefined;
@@ -297,14 +301,22 @@ export async function ask(deps: PipelineDeps, input: AskInput): Promise<AskRespo
     title: c.title,
   }));
 
+  const ungrounded = routing?.grounded === false;
+
   const result = await deps.inference.generate({
     alias,
     system: {
       // Stable prefix first so it is cacheable; evidence and question after.
-      stable:
-        "Answer using ONLY the provided sources. Cite the source ids you used in " +
-        "square brackets. If the sources do not contain the answer, say the corpus " +
-        "is insufficient rather than guessing. Be concise and specific.",
+      stable: ungrounded
+        ? // Out-of-corpus general question. Answering it is correct — refusing
+          // would be unhelpful rather than safe — but the answer must not be
+          // dressed up as corpus-verified.
+          "Answer the question directly from your own knowledge. Be concise. " +
+          "Do not cite sources, and do not claim the answer comes from any " +
+          "documentation. If you are genuinely unsure, say so."
+        : "Answer using ONLY the provided sources. Cite the source ids you used in " +
+          "square brackets. If the sources do not contain the answer, say the corpus " +
+          "is insufficient rather than guessing. Be concise and specific.",
       volatile: evidence ? `Sources:\n\n${evidence}` : undefined,
     },
     user: input.question,
@@ -315,8 +327,9 @@ export async function ask(deps: PipelineDeps, input: AskInput): Promise<AskRespo
   return {
     runId,
     answer: result.text,
-    citations,
+    citations: ungrounded ? [] : citations,
     route: routeLabel,
+    grounded: !ungrounded,
     selectedModelId: result.selectedModelId,
     providerRequestId: result.providerRequestId,
     usage: usageFrom(result, embeds),

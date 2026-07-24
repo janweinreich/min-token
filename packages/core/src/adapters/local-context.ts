@@ -17,6 +17,7 @@
 import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { basename, join } from "node:path";
+import { danger } from "../danger-lexicon.js";
 import type { Embedder, KnowledgeRetriever, RetrievedChunk } from "../ports.js";
 
 interface Chunk extends RetrievedChunk {
@@ -138,6 +139,20 @@ export class LocalContextProvider implements KnowledgeRetriever {
 
   async listContents() {
     return this.contents;
+  }
+
+  /**
+   * Tokens the corpus actually talks about. Used to tell "asked about our docs and
+   * we failed to retrieve" apart from "was never a docs question".
+   */
+  corpusTerms(): Set<string> {
+    const out = new Set<string>();
+    for (const c of this.chunks) {
+      for (const t of danger(`${c.title} ${c.text}`)) {
+        if (t.cls === "product" || t.cls === "identifier") out.add(t.value);
+      }
+    }
+    return out;
   }
 
   async health() {
