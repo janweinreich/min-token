@@ -7,7 +7,13 @@
  * provably zero-generation. See pipeline.test.ts.
  */
 import { randomUUID } from "node:crypto";
-import type { Embedder, GenerateResult, InferenceProvider, VectorStore } from "./ports.js";
+import type {
+  Embedder,
+  GenerateResult,
+  InferenceProvider,
+  KnowledgeRetriever,
+  VectorStore,
+} from "./ports.js";
 import {
   buildEmbeddingText,
   evaluateReplay,
@@ -76,6 +82,12 @@ export interface PipelineDeps {
   policy: ReplayPolicy;
   activeSnapshotId: string;
   now?: () => Date;
+  /** Optional: when present, generation is grounded in retrieved context. */
+  knowledge?: KnowledgeRetriever;
+  /** Evidence budget. These are the knobs the evolution loop actually moves. */
+  contextK?: number;
+  maxCharsPerChunk?: number;
+  maxOutputTokens?: number;
 }
 
 const ZERO_USAGE = (embeds: number): Usage => ({
@@ -188,22 +200,43 @@ export async function ask(deps: PipelineDeps, input: AskInput): Promise<AskRespo
   // NOTE: rejected candidates are deliberately NOT injected into the prompt. A
   // memory refused for Python whose answer says `npm install ...` would simply be
   // copied by the model, reopening the exact failure the guard exists to prevent.
+  const contextK = deps.contextK ?? 2;
+  const maxChars = deps.maxCharsPerChunk ?? 1200;
+  const chunks = deps.knowledge
+    ? await deps.knowledge.searchContext({ query: input.question, maxResults: contextK })
+    : [];
+
+  // Truncation is where `maxCharsPerChunk` turns into real tokens. Input is ~82%
+  // of the budget, so this is the highest-leverage number the policy carries.
+  const evidence = chunks
+    .map((c, i) => `[${c.contentId}] ${c.title}\n${c.text.slice(0, maxChars)}`)
+    .join("\n\n");
+
+  const citations: Citation[] = chunks.map((c) => ({
+    sourceId: c.contentId,
+    versionId: c.versionId,
+    title: c.title,
+  }));
+
   const result = await deps.inference.generate({
     alias: "lean",
     system: {
+      // Stable prefix first so it is cacheable; evidence and question after.
       stable:
-        "You answer questions about the provided documentation. Use only the given sources. " +
-        "If the evidence is insufficient, say so plainly rather than guessing.",
+        "Answer using ONLY the provided sources. Cite the source ids you used in " +
+        "square brackets. If the sources do not contain the answer, say the corpus " +
+        "is insufficient rather than guessing. Be concise and specific.",
+      volatile: evidence ? `Sources:\n\n${evidence}` : undefined,
     },
     user: input.question,
-    maxOutputTokens: 400,
+    maxOutputTokens: deps.maxOutputTokens ?? 400,
     requestId: runId,
   });
 
   return {
     runId,
     answer: result.text,
-    citations: [],
+    citations,
     route: "GENERATED",
     selectedModelId: result.selectedModelId,
     providerRequestId: result.providerRequestId,

@@ -16,6 +16,7 @@ export type DangerClass =
   | "product"
   | "packageManager"
   | "operation"
+  | "descriptiveOperation"
   | "polarity"
   | "temporal"
   | "version"
@@ -40,11 +41,32 @@ const PRODUCTS = [
 
 const PACKAGE_MANAGERS = ["npm", "pnpm", "yarn", "pip", "poetry", "cargo", "gem", "brew"] as const;
 
+/**
+ * Only MUTATING operations gate replay.
+ *
+ * The distinction is whether swapping the verb changes what the correct answer
+ * IS. "install" vs "uninstall" and "create" vs "delete" are inverses — serving
+ * one for the other is actively harmful. But "what port should I CONNECT to"
+ * and "which port does it LISTEN on" are the same fact asked from two
+ * directions, and gating on those verbs refused legitimate paraphrases while
+ * buying no safety at all: the dangerous cases (a Python question hitting a
+ * JavaScript memory) are already caught by language and ecosystem, not by verbs.
+ *
+ * Measured: treating descriptive verbs as dangerous cost real replay recall.
+ */
 const OPERATIONS = [
-  "install", "uninstall", "upgrade", "downgrade", "configure", "create",
-  "delete", "drop", "revoke", "publish", "deploy", "migrate", "rollback",
-  "enable", "disable", "start", "stop", "connect", "authenticate", "search",
-  "query", "insert", "upsert",
+  "install", "uninstall", "upgrade", "downgrade", "create", "delete", "drop",
+  "revoke", "publish", "deploy", "migrate", "rollback", "enable", "disable",
+  "start", "stop",
+] as const;
+
+/**
+ * Descriptive verbs. Extracted so they can be reported in traces, but NOT used
+ * for the containment check.
+ */
+const DESCRIPTIVE_OPERATIONS = [
+  "connect", "authenticate", "search", "query", "insert", "upsert", "configure",
+  "read", "list", "get", "use", "call", "run",
 ] as const;
 
 const POLARITY = ["not", "without", "never", "cannot", "cant", "avoid", "except", "instead"] as const;
@@ -92,6 +114,7 @@ const WORD_SETS: Array<[DangerClass, readonly string[]]> = [
   ["product", PRODUCTS],
   ["packageManager", PACKAGE_MANAGERS],
   ["operation", OPERATIONS],
+  ["descriptiveOperation", DESCRIPTIVE_OPERATIONS],
   ["polarity", POLARITY],
   ["temporal", TEMPORAL],
 ];
