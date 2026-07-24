@@ -1,6 +1,6 @@
 # Routing Skill v1
 
-> Generated 2026-07-24T21:55:54.724Z from policy v1. **Do not edit by hand** — this file is recompiled on every policy promotion, and every rule below is derived from a policy parameter or from measured routing episodes.
+> Generated 2026-07-24T21:58:36.693Z from policy v1. **Do not edit by hand** — this file is recompiled on every policy promotion, and every rule below is derived from a policy parameter or from measured routing episodes.
 
 ## Goal
 
@@ -25,6 +25,7 @@ Chunks are truncated to 1200 characters. This is the highest-leverage number her
 | comparison | 30 | 11 | 8 | 0.44 | 275 → 847 | **skip lean** — go straight to strong |
 | explanation | 34 | 4 | 3 | 0.29 | 380 → 779 | **skip lean** — go straight to strong |
 | lookup | 95 | 50 | 45 | 0.79 | 299 → 744 | **use lean** |
+| unknown | 1 | 0 | 0 | 0.00 | – → 730 | _gathering evidence_ |
 
 Routing **comparison, explanation** straight to the strong model avoids the retry tax: a lean attempt that fails and escalates costs more than starting strong, because the repair reuses the larger context.
 
