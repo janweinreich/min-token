@@ -20,6 +20,7 @@ import {
   isTemporal,
   maskEntities,
   valuesOf,
+  type DangerClass,
   type DangerToken,
 } from "./danger-lexicon.js";
 
@@ -51,6 +52,18 @@ export interface ReplayPolicy {
   minimumCitationScore: number;
   maximumMemoryAgeDays: number;
   rawCosineFloor: number;
+  /**
+   * Refuse SEMANTIC replay when the gate found no identifying entity to check.
+   *
+   * Measured, scripts/measure-ungated.ts: on general-knowledge questions the
+   * closed lexicon extracts nothing, so cosine is the only evidence left — and
+   * cosine cannot do this job. "When did WWII begin?" vs "...end?" scores 0.922,
+   * HIGHER than a genuine paraphrase at 0.852. There is no threshold that
+   * separates them, so retuning tau is not an available fix.
+   *
+   * Exact replay is unaffected: an identical question is safe with no entities.
+   */
+  requireGateEvidence: boolean;
 }
 
 /** Bump the extractor version whenever the lexicon or masking changes. */
@@ -89,6 +102,22 @@ export function buildEmbeddingText(question: string): string {
 }
 
 // ── The gate ─────────────────────────────────────────────────────────────────
+
+/**
+ * Classes that IDENTIFY what is being asked about, as opposed to merely
+ * colouring it. These are the classes the containment, version and numeric
+ * checks operate on, so they are exactly the evidence the gate can verify.
+ */
+const IDENTIFYING: DangerClass[] = [
+  "language",
+  "product",
+  "packageManager",
+  "operation",
+  "surface",
+  "version",
+  "numeric",
+  "identifier",
+];
 
 export interface GateInput {
   queryText: string;
@@ -284,6 +313,26 @@ export function evaluateReplay(input: {
   passing.sort((a, b) => b.cosMasked - a.cosMasked);
   const top = passing[0]!;
 
+  // Semantic replay needs something the GATE could actually verify.
+  //
+  // The gate's checks are DIRECTIONAL — containment, version and numeric all ask
+  // "is what the QUERY names covered by memory?". A query that names nothing
+  // passes every one of them vacuously, so the decision collapses onto cosine,
+  // and scripts/measure-ungated.ts shows cosine cannot carry it: opposites reach
+  // 0.922 while a genuine paraphrase sits at 0.852. Entities on the memory side
+  // do not rescue this, because no check reads in that direction.
+  if (policy.requireGateEvidence) {
+    const qTokens = danger(queryText);
+    const queryEvidence = IDENTIFYING.reduce((n, cls) => n + valuesOf(qTokens, cls).size, 0);
+    if (queryEvidence === 0) {
+      rejections.push({
+        memoryId: top.memory.id,
+        reasons: ["no_identifying_entities_to_verify"],
+      });
+      return { allowed: false, rejections };
+    }
+  }
+
   // Asymmetric threshold: raise the bar when the MEMORY commits to entities the
   // query never mentions (memory more specific than the question).
   //
@@ -339,4 +388,5 @@ export const DEFAULT_REPLAY_POLICY: ReplayPolicy = {
   minimumCitationScore: 1.0,
   maximumMemoryAgeDays: 30,
   rawCosineFloor: 0.35,
+  requireGateEvidence: true,
 };

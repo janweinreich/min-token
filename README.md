@@ -54,9 +54,18 @@ cold  (all generated) : 1360 tokens
 warm  (3/4 replayed)  :  393 tokens   -> 71.1% saved
 ```
 
-**Replay safety** — 16 probes, 6 that must replay and 10 that must not: **16/16 correct**, Wilson 95% lower bound **0.806**. That bound is the ceiling for 16 probes; supporting a ≥0.95 claim needs roughly 80. We report the bound, not the point estimate.
+**Replay safety** — 20 probes, 7 that must replay and 13 that must not: **20/20 correct**, Wilson 95% lower bound **0.839**. That bound is the ceiling for 20 probes; supporting a ≥0.95 claim needs roughly 80. We report the bound, not the point estimate.
 
-Run them yourself: `pnpm replay-safety` (no API key, no network, milliseconds), `pnpm savings`, `pnpm evolve`.
+**Training mode: the router that did not pay for itself.** A strong model judges which cheaper model would have sufficed, and the accepted labels are distilled into per-class rules. Serving those rules two ways, over 8 questions against an always-haiku baseline:
+
+| how the rules are used | router tokens | net vs baseline |
+|---|---:|---:|
+| **applied as a lookup** | **0** | **cheaper model, no overhead** |
+| read by a cheap model at request time | ~470/request | **−4,404 tokens, −$0.023, 0/8 wins** |
+
+The LLM router's cost is *fixed* per request while its saving scales with answer length, so on short answers the overhead exceeds the whole answer — and when it upgrades a question it pays twice, once to decide and once for the longer answer. The distillation is the valuable part; reading a lookup table does not need an LLM. Both paths ship, switchable in the UI, because showing the comparison is more honest than asserting the winner. `artifacts/router-overhead.json`.
+
+Run them yourself: `pnpm replay-safety` (no API key, no network, milliseconds), `pnpm savings`, `pnpm evolve`, `pnpm router-overhead`.
 
 ---
 
@@ -65,6 +74,8 @@ Run them yourself: `pnpm replay-safety` (no API key, no network, milliseconds), 
 Worth stating plainly, because the interesting parts are the limits.
 
 **Real:** all token counts are provider-reported; the router runs on every request; replay safety is measured; quality comes from scoring answers a model actually produced.
+
+**Found by testing, not by design:** the replay gate is a *closed* lexicon of software entities, so when the agent started answering general-knowledge questions it had nothing to check and fell back to cosine alone — which served the stored *boiling* point of water for a question about the *freezing* point, at similarity 0.803. Measurement showed no threshold can fix it: "when did WWII begin" vs "…end" scores 0.922, **higher** than a genuine paraphrase at 0.852 (`pnpm measure-ungated`). Semantic replay now refuses when the query raises no entity the gate can verify. That deliberately gives up real savings on general-knowledge paraphrases; exact repeats still replay at zero tokens.
 
 **Not yet:** the benchmark is 20 dev / 8 holdout cases, which is small. It contains no abstain and no code cases, so two of the five routing rules are covered by unit tests but unmeasured end to end. The per-request "always-strong would have cost ~765" in the UI is an **estimate** from measured per-case averages — the header's benchmark comparison is the hard number.
 
@@ -98,11 +109,14 @@ packages/core/src/
 | command | needs a key | what it does |
 |---|---|---|
 | `pnpm dev` | yes | the live app |
-| `pnpm test` | no | 72 tests, incl. replay proven against a *throwing* generator |
-| `pnpm replay-safety` | no | 16 probes, writes `artifacts/replay-safety.json` |
+| `pnpm test` | no | 83 tests, incl. replay proven against a *throwing* generator |
+| `pnpm replay-safety` | no | 20 probes, writes `artifacts/replay-safety.json` |
+| `pnpm measure-ungated` | no | why ungated semantic replay is refused, not retuned |
 | `pnpm calibrate` | no | the cosine measurement the whole design rests on |
 | `pnpm savings` | yes | cold-vs-warm token savings, with a safety control |
 | `pnpm evolve` | yes | full evolution cycle, regenerates the skill |
+| `pnpm train` | yes | judge-labelled distillation into `artifacts/routing-rules.json` |
+| `pnpm router-overhead` | yes | does the LLM router pay for itself? (measured: no) |
 
 ## Stack
 

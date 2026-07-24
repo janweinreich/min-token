@@ -13,6 +13,10 @@ import { DEFAULT_POLICY } from "../packages/core/src/policy.js";
 import { leanSuccessLowerBound, type RoutingEpisode } from "../packages/core/src/router.js";
 import { classifyTask } from "../packages/core/src/features.js";
 import { synthesizeRoutingSkill, type EpisodeRecord } from "../packages/core/src/skill-synthesis.js";
+import { routeWithLlm } from "../packages/core/src/train/llm-router.js";
+import { applyRules } from "../packages/core/src/train/apply-rules.js";
+import { ROUTER_MODEL } from "../packages/core/src/train/ladder.js";
+import type { ClassRule } from "../packages/core/src/train/distil.js";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import {
   DEFAULT_REPLAY_POLICY,
@@ -236,11 +240,72 @@ async function approve(a: Agent, question: string, answer: string) {
   ]);
 }
 
-export async function handle(question: string, autoApprove: boolean) {
+/** Distilled rules, loaded once. Absent until `pnpm train` has been run. */
+let cachedRules: ClassRule[] | null | undefined;
+async function distilledRules(): Promise<ClassRule[] | null> {
+  if (cachedRules !== undefined) return cachedRules;
+  try {
+    const j = JSON.parse(await readFile("artifacts/routing-rules.json", "utf8")) as { rules: ClassRule[] };
+    cachedRules = j.rules;
+  } catch {
+    cachedRules = null;
+  }
+  return cachedRules;
+}
+
+async function routerCall(modelId: string, system: string, user: string, maxOut: number) {
+  const base = process.env.PIONEER_BASE_URL ?? "https://api.pioneer.ai/v1";
+  const res = await fetch(`${base}/messages`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": process.env.PIONEER_API_KEY ?? "", "anthropic-version": "2023-06-01" },
+    body: JSON.stringify({
+      model: modelId, max_tokens: maxOut,
+      system: [{ type: "text", text: system }],
+      messages: [{ role: "user", content: user }],
+      thinking: { type: "disabled" },
+    }),
+    signal: AbortSignal.timeout(45_000),
+  });
+  const j = (await res.json()) as { content?: { type: string; text?: string }[]; usage?: { input_tokens?: number; output_tokens?: number } };
+  if (!j.content) throw new Error("router returned no content");
+  return {
+    text: j.content.filter((b) => b.type === "text").map((b) => b.text ?? "").join(""),
+    inputTokens: j.usage?.input_tokens ?? 0,
+    outputTokens: j.usage?.output_tokens ?? 0,
+  };
+}
+
+/**
+ * `off`      — keyword classifier only, the zero-token baseline.
+ * `learned`  — the distilled rules applied as a lookup. Still zero tokens.
+ * `llm`      — a cheap model READS the skill and decides. Measured to cost more
+ *              than it saves (scripts/measure-router-overhead.ts); kept so the
+ *              comparison is visible rather than asserted.
+ */
+export type RouterMode = "off" | "learned" | "llm";
+
+export async function handle(question: string, autoApprove: boolean, mode: RouterMode = "off") {
   const a = agent();
   await a.ready;
 
-  const r: AskResponse = await ask({ ...a.deps, episodes: a.episodes }, { question, tenantId: TENANT });
+  const rules = mode === "off" ? null : await distilledRules();
+  const llmRouter =
+    rules && rules.length
+      ? mode === "llm"
+        ? (q: string, fallback: string) => routeWithLlm(q, rules, routerCall, fallback)
+        : (q: string, fallback: string) => {
+            const r = applyRules(classifyTask(q), rules, fallback);
+            return Promise.resolve({
+              ...r,
+              inputTokens: 0,
+              outputTokens: 0,
+              costUsd: 0,
+              latencyMs: 0,
+            });
+          }
+      : undefined;
+
+  const r: AskResponse = await ask({ ...a.deps, episodes: a.episodes, llmRouter }, { question, tenantId: TENANT });
 
   const replayed = r.route.endsWith("REPLAY");
   const spent = r.usage.totalGenerationTokens;
@@ -278,6 +343,16 @@ export async function handle(question: string, autoApprove: boolean) {
   // says so, because claiming four integrations and shipping one is the kind of
   // thing a judge checks.
   const tools = [
+    ...(r.llmRouting
+      ? [{
+          sponsor: "Pioneer",
+          what: "distilled router",
+          live: r.llmRouting.source === "llm",
+          detail:
+            `${ROUTER_MODEL} read the skill and chose ${r.llmRouting.model} — "${r.llmRouting.reason}"` +
+            ` · $${r.llmRouting.costUsd.toFixed(5)} · ${r.llmRouting.latencyMs} ms`,
+        }]
+      : []),
     {
       sponsor: "Pioneer",
       what: "inference",
@@ -313,6 +388,8 @@ export async function handle(question: string, autoApprove: boolean) {
     learned: learned(a),
     measured: MEASURED,
     policyVersion: 1,
+    routerModel: ROUTER_MODEL,
+    distilledRulesAvailable: (await distilledRules())?.length ?? 0,
     episodeCount: a.episodes.length,
     seededEpisodes: a.seeded,
   };

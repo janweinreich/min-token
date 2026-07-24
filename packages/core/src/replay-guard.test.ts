@@ -265,3 +265,56 @@ describe("gate directionality", () => {
     ).toBe(false);
   });
 });
+
+describe("ungated general knowledge (regression: the boiling/freezing false replay)", () => {
+  /**
+   * Found live, not in a test: asking for the FREEZING point of water was served
+   * the stored BOILING point answer at cosine 0.803. Every gate check passed
+   * vacuously because the closed lexicon extracts nothing from physics questions,
+   * so cosine was the only evidence — and scripts/measure-ungated.ts shows cosine
+   * cannot do this job here ("WWII begin" vs "WWII end" = 0.922, above a genuine
+   * paraphrase at 0.852). Retuning tau is not a fix; requiring evidence is.
+   */
+  const physics = mem({
+    id: "phys",
+    normalizedQuestion: "what is the boiling point of water at sea level in celsius",
+    answerText: "The boiling point of water at sea level is 100°C.",
+  });
+
+  it("refuses semantic replay when the gate has no identifying entity to check", () => {
+    const d = evaluateReplay({
+      ...base,
+      queryText: "What is the freezing point of water at sea level in Celsius?",
+      candidates: [cand(physics, 0.803, 0.803)],
+    });
+    expect(d.allowed).toBe(false);
+    if (!d.allowed) {
+      expect(d.rejections.flatMap((r) => r.reasons)).toContain("no_identifying_entities_to_verify");
+    }
+  });
+
+  it("still serves EXACT replay for the same question — identity needs no entities", () => {
+    const d = evaluateReplay({
+      ...base,
+      queryText: "What is the boiling point of water at sea level in Celsius?",
+      candidates: [cand(physics, 1, 1)],
+    });
+    expect(d.allowed).toBe(true);
+    if (d.allowed) expect(d.kind).toBe("exact");
+  });
+
+  it("leaves corpus paraphrase replay intact — that pair does raise entities", () => {
+    const d = evaluateReplay({
+      ...base,
+      queryText: "Which npm package do I need for Actian VectorAI from JavaScript?",
+      candidates: [cand(mem(), 0.72, 0.68)],
+    });
+    expect(d.allowed).toBe(true);
+    if (d.allowed) expect(d.kind).toBe("semantic");
+  });
+
+  it("cannot be disabled by the evolution engine", async () => {
+    const { NON_MUTABLE } = await import("./policy.js");
+    expect(NON_MUTABLE).toContain("requireGateEvidence");
+  });
+});

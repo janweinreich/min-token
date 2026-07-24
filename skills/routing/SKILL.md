@@ -1,6 +1,6 @@
 # Routing Skill v1
 
-> Generated 2026-07-24T21:24:08.774Z from policy v1. **Do not edit by hand** — this file is recompiled on every policy promotion, and every rule below is derived from a policy parameter or from measured routing episodes.
+> Generated 2026-07-24T21:55:54.724Z from policy v1. **Do not edit by hand** — this file is recompiled on every policy promotion, and every rule below is derived from a policy parameter or from measured routing episodes.
 
 ## Goal
 
@@ -22,10 +22,9 @@ Chunks are truncated to 1200 characters. This is the highest-leverage number her
 
 | task class | n | lean tried | clean wins | success (lower bound) | mean tokens lean → strong | routing |
 |---|---:|---:|---:|---:|---:|---|
-| comparison | 31 | 11 | 8 | 0.44 | 275 → 825 | **skip lean** — go straight to strong |
+| comparison | 30 | 11 | 8 | 0.44 | 275 → 847 | **skip lean** — go straight to strong |
 | explanation | 34 | 4 | 3 | 0.29 | 380 → 779 | **skip lean** — go straight to strong |
-| lookup | 93 | 48 | 46 | 0.85 | 306 → 744 | **use lean** |
-| unknown | 1 | 1 | 1 | 0.14 | 213 → – | _gathering evidence_ |
+| lookup | 95 | 50 | 45 | 0.79 | 299 → 744 | **use lean** |
 
 Routing **comparison, explanation** straight to the strong model avoids the retry tax: a lean attempt that fails and escalates costs more than starting strong, because the repair reuses the larger context.
 
@@ -36,15 +35,3 @@ Routing **comparison, explanation** straight to the strong model avoids the retr
 - Never shorten an answer below the length its facts require; brevity is not quality.
 - Count every attempt, including failed and repaired ones, toward the token total.
 
-## Distilled model choice (training mode)
-
-Learned by having **claude-sonnet-5** answer each question, having every cheaper model answer it too, and then having claude-sonnet-5 judge which cheap answers were good enough to ship. The cheapest accepted model is the right route.
-
-| task class | n | use this model | accepted on | mean cost saving |
-|---|---:|---|---:|---:|
-| comparison | 2 | `claude-sonnet-5` _(too few examples — held at the reference)_ | 100% | 0% |
-| explanation | 1 | `claude-sonnet-5` _(too few examples — held at the reference)_ | 100% | 0% |
-| lookup | 4 | `gpt-5-nano` | 75% | 90% |
-| unknown | 3 | `claude-haiku-4-5` | 100% | 58% |
-
-A model is only recommended for a class when it was accepted on a **majority** of that class. Cheapest-ever-accepted would overfit to one lucky question and route the whole class to a model that usually fails.

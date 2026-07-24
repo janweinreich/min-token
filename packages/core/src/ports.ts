@@ -101,6 +101,8 @@ export interface GenerateRequest {
   responseSchema?: Record<string, unknown>;
   /** NOTE: no `temperature` — it is a 400 on claude-sonnet-5 / opus-5 / fable-5. */
   effort?: "low" | "medium" | "high";
+  /** Concrete model id, overriding the alias. Used by the distilled LLM router. */
+  modelOverride?: string;
   requestId: string;
   signal?: AbortSignal;
 }

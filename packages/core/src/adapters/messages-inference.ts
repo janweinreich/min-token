@@ -75,7 +75,7 @@ export class MessagesInference implements InferenceProvider {
   }
 
   async generate(req: GenerateRequest): Promise<GenerateResult> {
-    const model = this.modelFor(req.alias);
+    const model = req.modelOverride ?? this.modelFor(req.alias);
     const started = Date.now();
 
     const system = [{ type: "text", text: req.system.stable }];

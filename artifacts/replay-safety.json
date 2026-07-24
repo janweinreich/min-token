@@ -1,6 +1,6 @@
 {
-  "correct": 16,
-  "total": 16,
-  "wilsonLowerBound": 0.8063865817272801,
+  "correct": 20,
+  "total": 20,
+  "wilsonLowerBound": 0.8388698745050667,
   "failures": []
 }

@@ -53,6 +53,13 @@ export interface Usage {
    * number a judge checks.
    */
   totalGenerationTokens: number;
+  /**
+   * Tokens the ROUTER itself burned deciding. Counted inside
+   * totalGenerationTokens, never beside it: a router that picks a cheaper model
+   * by spending 460 tokens has not saved anything on a 70-token answer, and
+   * hiding its cost would turn a loss into an apparent win.
+   */
+  routerTokens: number;
   usageSource: "provider" | "estimated" | "none";
   localEmbeddingCalls: number;
   /**
@@ -94,6 +101,11 @@ export interface AskResponse {
   grounded?: boolean;
   /** Why the router chose what it chose — rendered in the trace. */
   routing?: RouteDecision;
+  /** Present when the distilled LLM router chose the model. */
+  llmRouting?: {
+    model: string; reason: string; source: string;
+    inputTokens: number; outputTokens: number; costUsd: number; latencyMs: number;
+  };
   latencyMs: number;
 }
 
@@ -113,6 +125,15 @@ export interface PipelineDeps {
   /** Products/identifiers the corpus covers, so out-of-domain questions are not refused. */
   corpusTerms?: Set<string>;
   /**
+   * Optional distilled router. It only chooses WHICH MODEL answers — replay, the
+   * grounded split and abstention stay deterministic, because those must not be
+   * promptable. Any failure falls back to the alias the deterministic router picked.
+   */
+  llmRouter?: (question: string, fallbackModel: string) => Promise<{
+    model: string; reason: string; source: "llm" | "learned" | "fallback";
+    inputTokens: number; outputTokens: number; costUsd: number; latencyMs: number;
+  }>;
+  /**
    * Override the router for a bootstrap probe.
    *
    * The history gate is an absorbing state: lean stays closed until it has a
@@ -131,6 +152,7 @@ export interface PipelineDeps {
 const ZERO_USAGE = (embeds: number): Usage => ({
   inputTokens: 0,
   outputTokens: 0,
+  routerTokens: 0,
   cacheReadTokens: 0,
   cacheWriteTokens: 0,
   totalGenerationTokens: 0,
@@ -140,18 +162,26 @@ const ZERO_USAGE = (embeds: number): Usage => ({
   estimatedCostUsd: 0,
 });
 
-function usageFrom(r: GenerateResult, embeds: number): Usage {
+function usageFrom(r: GenerateResult, embeds: number, router?: RouterCost): Usage {
+  const routerTokens = (router?.inputTokens ?? 0) + (router?.outputTokens ?? 0);
   return {
     inputTokens: r.inputTokens,
     outputTokens: r.outputTokens,
     cacheReadTokens: r.cacheReadTokens,
     cacheWriteTokens: r.cacheWriteTokens,
     totalGenerationTokens:
-      r.inputTokens + r.outputTokens + r.cacheReadTokens + r.cacheWriteTokens,
+      r.inputTokens + r.outputTokens + r.cacheReadTokens + r.cacheWriteTokens + routerTokens,
+    routerTokens,
     usageSource: r.usageSource,
     localEmbeddingCalls: embeds,
-    estimatedCostUsd: r.estimatedCostUsd ?? 0,
+    estimatedCostUsd: (r.estimatedCostUsd ?? 0) + (router?.costUsd ?? 0),
   };
+}
+
+interface RouterCost {
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
 }
 
 function toMemoryRecord(payload: Record<string, unknown>): MemoryRecord {
@@ -311,8 +341,15 @@ export async function ask(deps: PipelineDeps, input: AskInput): Promise<AskRespo
 
   const ungrounded = routing?.grounded === false;
 
+  // The distilled router refines the alias into a concrete model. It never
+  // changes whether we replay, ground or abstain.
+  const llm = deps.llmRouter
+    ? await deps.llmRouter(input.question, alias === "lean" ? "claude-haiku-4-5" : "claude-sonnet-5")
+    : undefined;
+
   const result = await deps.inference.generate({
     alias,
+    modelOverride: llm?.model,
     system: {
       // Stable prefix first so it is cacheable; evidence and question after.
       stable: ungrounded
@@ -340,9 +377,10 @@ export async function ask(deps: PipelineDeps, input: AskInput): Promise<AskRespo
     grounded: !ungrounded,
     selectedModelId: result.selectedModelId,
     providerRequestId: result.providerRequestId,
-    usage: usageFrom(result, embeds),
+    usage: usageFrom(result, embeds, llm),
     memory,
     routing,
+    llmRouting: llm,
     latencyMs: Date.now() - t0,
   };
 }

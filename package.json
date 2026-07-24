@@ -13,7 +13,10 @@
     "savings": "tsx scripts/measure-savings.ts",
     "evolve": "tsx scripts/evolve-live.ts",
     "smoke": "tsx scripts/smoke-inference.ts",
-    "calibrate": "tsx scripts/spike-embed.ts"
+    "calibrate": "tsx scripts/spike-embed.ts",
+    "measure-ungated": "tsx scripts/measure-ungated.ts",
+    "router-overhead": "tsx scripts/measure-router-overhead.ts",
+    "train": "tsx scripts/train-router.ts"
   },
   "dependencies": {
     "@huggingface/transformers": "4.2.0",

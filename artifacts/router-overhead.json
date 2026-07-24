@@ -1,0 +1,90 @@
+{
+  "router": "claude-haiku-4-5",
+  "baseline": "claude-haiku-4-5",
+  "questions": 8,
+  "netTokens": -4404,
+  "netUsd": -0.02300605,
+  "wins": 0,
+  "rows": [
+    {
+      "question": "How many continents are there on Earth?",
+      "picked": "gpt-5-nano",
+      "routerTokens": 464,
+      "answerTokens": 69,
+      "withRouter": 533,
+      "baselineTokens": 113,
+      "deltaTokens": -420,
+      "deltaUsd": -0.00016375
+    },
+    {
+      "question": "What is the chemical symbol for gold?",
+      "picked": "gpt-5-nano",
+      "routerTokens": 459,
+      "answerTokens": 42,
+      "withRouter": 501,
+      "baselineTokens": 40,
+      "deltaTokens": -461,
+      "deltaUsd": -0.00049295
+    },
+    {
+      "question": "What year did the Berlin Wall fall?",
+      "picked": "gpt-5-nano",
+      "routerTokens": 459,
+      "answerTokens": 43,
+      "withRouter": 502,
+      "baselineTokens": 74,
+      "deltaTokens": -428,
+      "deltaUsd": -0.00032335
+    },
+    {
+      "question": "Explain why the sky appears blue.",
+      "picked": "claude-sonnet-5",
+      "routerTokens": 468,
+      "answerTokens": 541,
+      "withRouter": 1009,
+      "baselineTokens": 317,
+      "deltaTokens": -692,
+      "deltaUsd": -0.004253
+    },
+    {
+      "question": "What is the difference between a mutex and a semaphore?",
+      "picked": "claude-sonnet-5",
+      "routerTokens": 466,
+      "answerTokens": 516,
+      "withRouter": 982,
+      "baselineTokens": 438,
+      "deltaTokens": -544,
+      "deltaUsd": -0.0033480000000000003
+    },
+    {
+      "question": "Compare orbital refuelling versus a single heavy-lift launch for a Mars cargo mission, and say which wins on cost.",
+      "picked": "claude-sonnet-5",
+      "routerTokens": 479,
+      "answerTokens": 768,
+      "withRouter": 1247,
+      "baselineTokens": 405,
+      "deltaTokens": -842,
+      "deltaUsd": -0.005898
+    },
+    {
+      "question": "Walk through how you would design a rate limiter that is fair across tenants of very different sizes.",
+      "picked": "claude-sonnet-5",
+      "routerTokens": 485,
+      "answerTokens": 755,
+      "withRouter": 1240,
+      "baselineTokens": 741,
+      "deltaTokens": -499,
+      "deltaUsd": -0.004222
+    },
+    {
+      "question": "Explain the trade-offs between optimistic and pessimistic concurrency control in a multi-region database.",
+      "picked": "claude-sonnet-5",
+      "routerTokens": 479,
+      "answerTokens": 759,
+      "withRouter": 1238,
+      "baselineTokens": 720,
+      "deltaTokens": -518,
+      "deltaUsd": -0.004305
+    }
+  ]
+}

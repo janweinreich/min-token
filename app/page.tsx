@@ -10,9 +10,15 @@ interface Res {
   route: string;
   selectedModelId?: string;
   latencyMs: number;
-  usage: { totalGenerationTokens: number; inputTokens: number; outputTokens: number; localEmbeddingCalls: number };
+  usage: { totalGenerationTokens: number; inputTokens: number; outputTokens: number; routerTokens: number; localEmbeddingCalls: number };
   memory: { hit: boolean; kind?: string; similarity?: number; rejections: Rejection[] };
   routing?: { reasons: string[]; leanSuccessLCB: number; contextK: number; evidenceCoverage: number };
+  llmRouting?: {
+    model: string; reason: string; source: string;
+    inputTokens: number; outputTokens: number; costUsd: number; latencyMs: number;
+  };
+  routerModel?: string;
+  distilledRulesAvailable?: number;
   citations: { sourceId: string }[];
   strongEstimate: number;
   session: { asks: number; spent: number; avoidedEst: number; replays: number };
@@ -49,6 +55,11 @@ export default function Page() {
   const [busy, setBusy] = useState(false);
   const [log, setLog] = useState<Array<{ q: string; r: Res }>>([]);
   const [skill, setSkill] = useState<string | null>(null);
+  // Training mode. `learned` applies the distilled rules as a lookup at zero
+  // tokens; `llm` pays a cheap model to read the same rules. Measured, the LLM
+  // variant loses 4,496 tokens over 8 questions — it is offered so the
+  // comparison is visible on stage, not because it wins.
+  const [routerMode, setRouterMode] = useState<"off" | "learned" | "llm">("off");
   const last = log[log.length - 1]?.r;
 
   async function send(question: string) {
@@ -59,7 +70,7 @@ export default function Page() {
       const res = await fetch("/api/ask", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({ question, routerMode }),
       });
       const r = (await res.json()) as Res;
       setLog((l) => [...l, { q: question, r }]);
@@ -135,6 +146,24 @@ export default function Page() {
               ask
             </button>
           </div>
+          <div className="trainmode">
+            <b>training mode</b>
+            {(["off", "learned", "llm"] as const).map((mo) => (
+              <button
+                key={mo}
+                className={routerMode === mo ? "mode on" : "mode"}
+                onClick={() => setRouterMode(mo)}
+                disabled={busy}
+              >
+                {mo === "off" ? "off" : mo === "learned" ? "apply learned rules · 0 tok" : `${last?.routerModel ?? "cheap model"} reads the skill · ~470 tok`}
+              </button>
+            ))}
+            <span className="tiny">
+              {last?.distilledRulesAvailable
+                ? `${last.distilledRulesAvailable} distilled rules · measured: paying a model to read them lost 4,496 tokens over 8 questions, so applying them as a lookup is the default`
+                : "run `pnpm train` first — no distilled rules yet"}
+            </span>
+          </div>
           <div className="suggest">
             {SUGGESTED.map((s) => (
               <button key={s} onClick={() => send(s)} disabled={busy}>
@@ -186,6 +215,24 @@ export default function Page() {
                       {last.selectedModelId}
                     </div>
                     <code>{last.routing?.reasons.join(" · ")}</code>
+                    {last.llmRouting && (
+                      <div className={last.llmRouting.source === "llm" ? "llmrouted" : "dim"}>
+                        {last.llmRouting.source === "learned" ? (
+                          <>
+                            <b>learned rule</b> chose <b>{last.llmRouting.model}</b> — {last.llmRouting.reason}
+                            <span className="tiny"> · 0 router tokens</span>
+                          </>
+                        ) : last.llmRouting.source === "llm" ? (
+                          <>
+                            <b>{last.routerModel}</b> read the learned skill and picked{" "}
+                            <b>{last.llmRouting.model}</b> — &ldquo;{last.llmRouting.reason}&rdquo;
+                            <span className="tiny"> · router cost ${last.llmRouting.costUsd.toFixed(5)}</span>
+                          </>
+                        ) : (
+                          <>router fell back to {last.llmRouting.model}: {last.llmRouting.reason}</>
+                        )}
+                      </div>
+                    )}
                     {last.routing && (
                       <div className="dim">
                         lean confidence {last.routing.leanSuccessLCB.toFixed(2)} · evidence coverage{" "}
@@ -220,6 +267,13 @@ export default function Page() {
                   {savedPct > 0 ? `${savedPct}% cheaper than routing everything to the strong model` : "no saving"}{" "}
                   <span className="est">est.</span>
                 </div>
+                {last.usage.routerTokens > 0 && (
+                  <div className="warn tiny">
+                    includes {last.usage.routerTokens} tokens the router itself spent deciding —
+                    counted here, not hidden. On a cheap answer that overhead can exceed what the
+                    cheaper model saves.
+                  </div>
+                )}
                 <div className="dim tiny">
                   {last.usage.localEmbeddingCalls} local embeddings (not free — local compute, zero generation) ·{" "}
                   {last.latencyMs} ms

@@ -78,6 +78,10 @@ export const NON_MUTABLE: ReadonlyArray<keyof RoutingPolicy> = [
   "maximumRepairAttempts",
   "rawCosineFloor",
   "asymmetricThresholdBump",
+  // Measured non-separable (scripts/measure-ungated.ts). Evolution optimises for
+  // tokens, and turning this off would look like a large win while serving wrong
+  // answers — exactly the trade the gate exists to forbid.
+  "requireGateEvidence",
 ];
 
 export const DEFAULT_POLICY: RoutingPolicy = {
@@ -85,6 +89,7 @@ export const DEFAULT_POLICY: RoutingPolicy = {
   semanticReplayThreshold: 0.62,
   semanticReplayMargin: 0.02,
   asymmetricThresholdBump: 0,
+  requireGateEvidence: true,
   minimumStoredQuality: 0.92,
   minimumCitationScore: 1.0,
   maximumMemoryAgeDays: 30,

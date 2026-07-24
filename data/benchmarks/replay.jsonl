@@ -1,16 +1,20 @@
-{"id":"rp-allow-exact","question":"How do I install the Actian JavaScript SDK?","mustReplay":true,"why":"identical question"}
-{"id":"rp-allow-recased","question":"how do i install the actian javascript sdk","mustReplay":true,"why":"identical, recased"}
-{"id":"rp-allow-npm-ts","question":"Which npm package should I install to use Actian VectorAI from TypeScript?","mustReplay":true,"why":"safe paraphrase; JS answer covers TS"}
-{"id":"rp-allow-port","question":"What port should I connect to for Actian VectorAI over gRPC?","mustReplay":true,"why":"same fact, descriptive verb differs"}
-{"id":"rp-allow-guild","question":"How does a Guild coded agent differ from an agent driven by a model?","mustReplay":true,"why":"safe paraphrase of the comparison"}
-{"id":"rp-allow-header","question":"What header do I send to authenticate against Pioneer?","mustReplay":true,"why":"safe paraphrase"}
-{"id":"rp-reject-python","question":"How do I install the Actian Python SDK?","mustRejectReplay":true,"why":"language swap: js -> py"}
-{"id":"rp-reject-uninstall","question":"How do I uninstall the Actian JavaScript SDK?","mustRejectReplay":true,"why":"mutating operation inverted"}
-{"id":"rp-reject-latest","question":"What is the latest version of the Actian JavaScript SDK?","mustRejectReplay":true,"why":"temporal question, never replayed"}
-{"id":"rp-reject-delete","question":"Delete my Actian collection using the JavaScript SDK","mustRejectReplay":true,"why":"action intent with an external side effect"}
-{"id":"rp-reject-pip","question":"How do I install the Actian SDK with pip?","mustRejectReplay":true,"why":"ecosystem conflict via package manager"}
-{"id":"rp-reject-version","question":"How do I install version 2.0 of the Actian JavaScript SDK?","mustRejectReplay":true,"why":"version pinned in query, unpinned in memory"}
-{"id":"rp-reject-dim","question":"How do I create an Actian collection with 768 dimensions?","mustRejectReplay":true,"why":"numeric constraint differs from the memory"}
-{"id":"rp-reject-rest-port","question":"Which port does the Actian REST API listen on?","mustRejectReplay":true,"why":"different fact; gRPC memory must not serve it"}
-{"id":"rp-reject-unrelated","question":"How do I configure Postgres replication?","mustRejectReplay":true,"why":"outside the corpus entirely"}
-{"id":"rp-reject-personal","question":"What is in my Actian workspace right now?","mustRejectReplay":true,"why":"personalized and temporal"}
+{"id": "rp-allow-exact", "question": "How do I install the Actian JavaScript SDK?", "mustReplay": true, "why": "identical question"}
+{"id": "rp-allow-recased", "question": "how do i install the actian javascript sdk", "mustReplay": true, "why": "identical, recased"}
+{"id": "rp-allow-npm-ts", "question": "Which npm package should I install to use Actian VectorAI from TypeScript?", "mustReplay": true, "why": "safe paraphrase; JS answer covers TS"}
+{"id": "rp-allow-port", "question": "What port should I connect to for Actian VectorAI over gRPC?", "mustReplay": true, "why": "same fact, descriptive verb differs"}
+{"id": "rp-allow-guild", "question": "How does a Guild coded agent differ from an agent driven by a model?", "mustReplay": true, "why": "safe paraphrase of the comparison"}
+{"id": "rp-allow-header", "question": "What header do I send to authenticate against Pioneer?", "mustReplay": true, "why": "safe paraphrase"}
+{"id": "rp-reject-python", "question": "How do I install the Actian Python SDK?", "mustRejectReplay": true, "why": "language swap: js -> py"}
+{"id": "rp-reject-uninstall", "question": "How do I uninstall the Actian JavaScript SDK?", "mustRejectReplay": true, "why": "mutating operation inverted"}
+{"id": "rp-reject-latest", "question": "What is the latest version of the Actian JavaScript SDK?", "mustRejectReplay": true, "why": "temporal question, never replayed"}
+{"id": "rp-reject-delete", "question": "Delete my Actian collection using the JavaScript SDK", "mustRejectReplay": true, "why": "action intent with an external side effect"}
+{"id": "rp-reject-pip", "question": "How do I install the Actian SDK with pip?", "mustRejectReplay": true, "why": "ecosystem conflict via package manager"}
+{"id": "rp-reject-version", "question": "How do I install version 2.0 of the Actian JavaScript SDK?", "mustRejectReplay": true, "why": "version pinned in query, unpinned in memory"}
+{"id": "rp-reject-dim", "question": "How do I create an Actian collection with 768 dimensions?", "mustRejectReplay": true, "why": "numeric constraint differs from the memory"}
+{"id": "rp-reject-rest-port", "question": "Which port does the Actian REST API listen on?", "mustRejectReplay": true, "why": "different fact; gRPC memory must not serve it"}
+{"id": "rp-reject-unrelated", "question": "How do I configure Postgres replication?", "mustRejectReplay": true, "why": "outside the corpus entirely"}
+{"id": "rp-reject-personal", "question": "What is in my Actian workspace right now?", "mustRejectReplay": true, "why": "personalized and temporal"}
+{"id": "rp-refuse-antonym-physics", "question": "What is the freezing point of water at sea level in Celsius?", "why": "opposite property, cosine 0.803 \u2014 gate extracts nothing so cosine alone cannot decide", "mustRejectReplay": true}
+{"id": "rp-refuse-antonym-temporal", "question": "When did the Second World War end?", "why": "opposite endpoint, cosine 0.922 \u2014 HIGHER than a genuine paraphrase at 0.852", "mustRejectReplay": true}
+{"id": "rp-allow-gk-exact", "question": "what is the boiling point of water at sea level in celsius", "mustReplay": true, "why": "identical question \u2014 exact replay needs no entities"}
+{"id": "rp-refuse-gk-paraphrase", "question": "At sea level, what temperature does water boil at in Celsius?", "why": "a real paraphrase we deliberately give up: no entity to verify, and no threshold separates it from the antonyms above", "mustRejectReplay": true}
