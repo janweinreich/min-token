@@ -1,6 +1,6 @@
 # Routing Skill v1
 
-> Generated 2026-07-24T23:03:57.281Z from policy v1. **Do not edit by hand** — this file is recompiled on every policy promotion, and every rule below is derived from a policy parameter or from measured routing episodes.
+> Generated 2026-07-24T23:14:22.807Z from policy v1. **Do not edit by hand** — this file is recompiled on every policy promotion, and every rule below is derived from a policy parameter or from measured routing episodes.
 
 ## Goal
 
@@ -23,9 +23,8 @@ Chunks are truncated to 1200 characters. This is the highest-leverage number her
 | task class | n | lean tried | clean wins | success (lower bound) | mean tokens lean → strong | routing |
 |---|---:|---:|---:|---:|---:|---|
 | comparison | 30 | 11 | 8 | 0.44 | 275 → 847 | **skip lean** — go straight to strong |
-| explanation | 34 | 4 | 3 | 0.29 | 380 → 779 | **skip lean** — go straight to strong |
-| lookup | 95 | 50 | 46 | 0.81 | 305 → 744 | **use lean** |
-| unknown | 1 | 0 | 0 | 0.00 | – → 754 | _gathering evidence_ |
+| explanation | 35 | 4 | 3 | 0.29 | 380 → 764 | **skip lean** — go straight to strong |
+| lookup | 92 | 47 | 45 | 0.85 | 304 → 744 | **use lean** |
 
 Routing **comparison, explanation** straight to the strong model avoids the retry tax: a lean attempt that fails and escalates costs more than starting strong, because the repair reuses the larger context.
 
@@ -36,8 +35,8 @@ Learned by having **claude-sonnet-5** answer each question, having every cheaper
 | task class | n | use this model | accepted on | mean cost saving |
 |---|---:|---|---:|---:|
 | comparison | 4 | `claude-haiku-4-5` | 100% | 53% |
-| explanation | 1 | `claude-sonnet-5` _(too few examples — held at the reference)_ | 100% | 0% |
-| lookup | 9 | `gpt-5-nano` | 89% | 97% |
+| explanation | 3 | `claude-haiku-4-5` | 100% | 54% |
+| lookup | 11 | `gpt-5-nano` | 82% | 98% |
 | unknown | 5 | `claude-haiku-4-5` | 100% | 58% |
 
 A model is only recommended for a class when it was accepted on a **majority** of that class. Cheapest-ever-accepted would overfit to one lucky question and route the whole class to a model that usually fails.

@@ -72,8 +72,8 @@ const ROUTE_COLOR: Record<string, string> = {
 };
 
 const MODES = [
-  { id: "off" as const, label: "OFF", hint: "keyword router · free" },
-  { id: "learned" as const, label: "LEARNED RULES", hint: "distilled table · free" },
+  { id: "off" as const, label: "IGNORE SKILL", hint: "keyword router · baseline" },
+  { id: "learned" as const, label: "USE SKILL", hint: "learned rules · 0 tok" },
   { id: "llm" as const, label: "MODEL READS SKILL", hint: "~625 tok/request" },
   { id: "train" as const, label: "LEARN FROM THIS", hint: "runs every model · expensive" },
 ];
@@ -108,7 +108,7 @@ export default function Page() {
   const [log, setLog] = useState<Array<{ q: string; r: Res }>>([]);
   const [skill, setSkill] = useState<string | null>(null);
   const [showDetail, setShowDetail] = useState(false);
-  const [routerMode, setRouterMode] = useState<"off" | "learned" | "llm" | "train">("off");
+  const [routerMode, setRouterMode] = useState<"off" | "learned" | "llm" | "train">("learned");
   const [train, setTrain] = useState<TrainRes | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [status, setStatus] = useState<Partial<Res> | null>(null);
@@ -213,9 +213,9 @@ export default function Page() {
           {/* Training mode. The whole strip changes state, not just the selected
               button — "which of three buttons looks pressed" is not a legible
               way to answer "am I in training mode right now". */}
-          <div className={routerMode === "off" ? "modes" : "modes active"}>
+          <div className={routerMode === "train" ? "modes train" : routerMode === "off" ? "modes" : "modes active"}>
             <span className="modeLabel">
-              TRAINING MODE <b>{routerMode === "off" ? "OFF" : "ON"}</b>
+              ROUTING <b>{routerMode === "train" ? "TRAINING" : routerMode === "off" ? "BASELINE" : "FROM SKILL"}</b>
             </span>
             {MODES.map((mo) => (
               <button

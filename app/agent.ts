@@ -17,7 +17,7 @@ import { routeWithLlm } from "../packages/core/src/train/llm-router.js";
 import { applyRules } from "../packages/core/src/train/apply-rules.js";
 import { REFERENCE_MODEL, ROUTER_MODEL } from "../packages/core/src/train/ladder.js";
 import type { ClassRule } from "../packages/core/src/train/distil.js";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, stat, writeFile, mkdir } from "node:fs/promises";
 import {
   DEFAULT_REPLAY_POLICY,
   EXTRACTOR_VERSION,
@@ -252,29 +252,46 @@ async function approve(a: Agent, question: string, answer: string) {
   ]);
 }
 
-/** The router prompt the reference model wrote. Absent until `pnpm train` runs. */
-let cachedPrompt: string | null | undefined;
-async function synthesizedPrompt(): Promise<string | null> {
-  if (cachedPrompt !== undefined) return cachedPrompt;
+/**
+ * Cache keyed on the file's mtime, not on "have we read it yet".
+ *
+ * These files are rewritten by live training WHILE the server runs. A
+ * read-once cache meant the serving path kept using the rules and prompt it
+ * loaded at boot: the agent would visibly learn something, write it down, and
+ * then carry on routing by the old policy until someone restarted it. That is
+ * the exact failure that makes a learning system indistinguishable from a
+ * static one.
+ */
+async function readIfChanged<T>(
+  path: string,
+  slot: { mtime: number; value: T | null },
+  parse: (raw: string) => T | null,
+): Promise<T | null> {
   try {
-    cachedPrompt = (await readFile("artifacts/router-prompt.md", "utf8")).trim() || null;
+    const { mtimeMs } = await stat(path);
+    if (mtimeMs === slot.mtime) return slot.value;
+    slot.value = parse(await readFile(path, "utf8"));
+    slot.mtime = mtimeMs;
   } catch {
-    cachedPrompt = null;
+    slot.value = null;
+    slot.mtime = -1;
   }
-  return cachedPrompt;
+  return slot.value;
 }
 
-/** Distilled rules, loaded once. Absent until `pnpm train` has been run. */
-let cachedRules: ClassRule[] | null | undefined;
+const promptSlot: { mtime: number; value: string | null } = { mtime: -2, value: null };
+async function synthesizedPrompt(): Promise<string | null> {
+  return readIfChanged("artifacts/router-prompt.md", promptSlot, (raw) => raw.trim() || null);
+}
+
+/** Distilled rules, re-read whenever training rewrites them. */
+const rulesSlot: { mtime: number; value: ClassRule[] | null } = { mtime: -2, value: null };
 async function distilledRules(): Promise<ClassRule[] | null> {
-  if (cachedRules !== undefined) return cachedRules;
-  try {
-    const j = JSON.parse(await readFile("artifacts/routing-rules.json", "utf8")) as { rules: ClassRule[] };
-    cachedRules = j.rules;
-  } catch {
-    cachedRules = null;
-  }
-  return cachedRules;
+  return readIfChanged(
+    "artifacts/routing-rules.json",
+    rulesSlot,
+    (raw) => (JSON.parse(raw) as { rules: ClassRule[] }).rules,
+  );
 }
 
 async function routerCall(modelId: string, system: string, user: string, maxOut: number) {

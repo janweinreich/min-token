@@ -18,6 +18,8 @@ import { synthesizeRouterPrompt } from "../../../packages/core/src/train/synthes
 import { buildRouterPrompt } from "../../../packages/core/src/train/llm-router.js";
 import { REFERENCE_MODEL } from "../../../packages/core/src/train/ladder.js";
 import { classifyTask } from "../../../packages/core/src/features.js";
+import { synthesizeRoutingSkill, type EpisodeRecord } from "../../../packages/core/src/skill-synthesis.js";
+import { DEFAULT_POLICY } from "../../../packages/core/src/policy.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -129,6 +131,36 @@ export async function POST(req: Request) {
       "utf8",
     );
 
+    // Regenerate the skill from the new rules. Training that updates its own
+    // artifacts but not the skill would leave the file the serving path reads
+    // describing a policy the agent no longer holds.
+    const episodes: EpisodeRecord[] = (
+      (JSON.parse(await readFile("artifacts/episodes.json", "utf8").catch(() => '{"episodes":[]}')) as {
+        episodes?: Array<Record<string, unknown>>;
+      }).episodes ?? []
+    ).map((e) => ({
+      similarity: Number(e.similarity ?? 0),
+      route: e.route as EpisodeRecord["route"],
+      passed: Boolean(e.passed),
+      repaired: Boolean(e.repaired),
+      taskType: String(e.taskType ?? "unknown"),
+      generationTokens: Number(e.generationTokens ?? 0),
+    }));
+    await mkdir("skills/routing", { recursive: true });
+    await writeFile(
+      "skills/routing/SKILL.md",
+      synthesizeRoutingSkill({
+        policyVersion: 1,
+        policy: DEFAULT_POLICY,
+        episodes,
+        qualityFloor: 0.9,
+        generatedAt: new Date().toISOString(),
+        distilled: rules,
+        referenceModel: REFERENCE_MODEL,
+      }) + "\n",
+      "utf8",
+    );
+
     const refCandidate = {
       model: example.referenceModel,
       totalTokens: example.referenceTokens,
@@ -145,6 +177,7 @@ export async function POST(req: Request) {
       trainingSetSize: all.length,
       rules,
       changes,
+      skillUpdated: true,
       promptUpdated,
       resynthEvery: RESYNTH_EVERY,
       untilResynth: (RESYNTH_EVERY - (all.length % RESYNTH_EVERY)) % RESYNTH_EVERY,

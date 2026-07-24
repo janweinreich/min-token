@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-24T23:07:57.951Z",
+  "generatedAt": "2026-07-24T23:14:00.464Z",
   "rules": [
     {
       "taskType": "comparison",
@@ -15,13 +15,14 @@
     },
     {
       "taskType": "explanation",
-      "n": 1,
-      "recommended": "claude-sonnet-5",
+      "n": 3,
+      "recommended": "claude-haiku-4-5",
       "support": 1,
-      "confident": false,
-      "meanSavingPct": 0,
+      "confident": true,
+      "meanSavingPct": 54.104229104229105,
       "examples": [
-        "How does Pioneer report which model actually served a routed request?"
+        "How does Pioneer report which model actually served a routed request?",
+        "Explain why the sky is blue."
       ]
     },
     {
