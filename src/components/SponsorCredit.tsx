@@ -6,11 +6,15 @@ const CREDIT: Record<
   SponsorId,
   { name: string; feature?: string; src?: string; className?: string }
 > = {
-  replay: {
-    name: "Replay",
-    feature: "session QA",
-    src: "/sponsors/replay.png",
-    className: "replay",
+  pioneer: {
+    name: "Pioneer",
+    feature: "routing",
+    src: "/sponsors/pioneer.png",
+  },
+  senso: {
+    name: "Senso",
+    feature: "quality",
+    src: "/sponsors/senso.png",
   },
   guild: {
     name: "Guild",
@@ -22,15 +26,11 @@ const CREDIT: Record<
     feature: "announce",
     src: "/sponsors/band.png",
   },
-  pioneer: {
-    name: "Pioneer",
-    feature: "routing",
-    src: "/sponsors/pioneer.png",
-  },
-  senso: {
-    name: "Senso",
-    feature: "quality",
-    src: "/sponsors/senso.png",
+  replay: {
+    name: "Replay",
+    feature: "session QA",
+    src: "/sponsors/replay.png",
+    className: "replay",
   },
   memory: {
     name: "Answer memory",
@@ -38,6 +38,7 @@ const CREDIT: Record<
   },
 };
 
+/** Logo-only credit. Name lives in alt / aria-label / title. */
 export function SponsorCredit({
   id,
   compact = false,
@@ -66,9 +67,6 @@ export function SponsorCredit({
           M
         </span>
       )}
-      {!compact && c.feature ? (
-        <span className="sponsor-credit-feature">{c.feature}</span>
-      ) : null}
     </span>
   );
 }

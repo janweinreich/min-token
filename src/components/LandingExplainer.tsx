@@ -34,8 +34,8 @@ export function LandingExplainer() {
               and batch cost dropped.
             </li>
             <li>
-              Skips Pioneer entirely on repeat questions via answer memory
-              ($0 compute on hits).
+              Skips Pioneer on repeat questions via answer memory ($0 compute on
+              hits).
             </li>
             <li>
               Announces promoted policies on Band and records Replay QA on the
@@ -48,33 +48,47 @@ export function LandingExplainer() {
           <h3>How a generation runs</h3>
           <ol className="landing-steps">
             <li>
-              <strong>Answer memory</strong> — normalize the question; on a hit,
-              reuse the stored answer and skip Pioneer.
+              <span className="landing-step-body">
+                <strong>Answer memory</strong> — normalize the question; on a
+                hit, reuse the stored answer and skip Pioneer.
+              </span>
             </li>
             <li>
-              <strong>Pioneer</strong> — miss → call the policy&apos;s tier
-              (cheap / mid / premium) with a token budget.
+              <span className="landing-step-body">
+                <strong>Pioneer</strong> — miss → call the policy&apos;s tier
+                (cheap / mid / premium) with a token budget.
+              </span>
             </li>
             <li>
-              <strong>Senso</strong> — score the answer against ground-truth
-              context; reject paths that fall under 0.90.
+              <span className="landing-step-body">
+                <strong>Senso</strong> — score against ground-truth context;
+                reject paths under 0.90.
+              </span>
             </li>
             <li>
-              <strong>Baseline vs challenger</strong> — first run measures
-              always-premium cost; later runs try a cheaper policy on the same
-              batch.
+              <span className="landing-step-body">
+                <strong>Baseline vs challenger</strong> — first run measures
+                always-premium cost; later runs try a cheaper policy on the same
+                batch.
+              </span>
             </li>
             <li>
-              <strong>Guild</strong> — promote if quality ≥ floor and cost ≤ 60%
-              of premium baseline; otherwise reject and keep the current policy.
+              <span className="landing-step-body">
+                <strong>Guild</strong> — promote if quality ≥ floor and cost ≤
+                60% of premium baseline; otherwise keep the current policy.
+              </span>
             </li>
             <li>
-              <strong>Band</strong> — on promote, post version, quality, and
-              savings to ops chat.
+              <span className="landing-step-body">
+                <strong>Band</strong> — on promote, post version, quality, and
+                savings to ops chat.
+              </span>
             </li>
             <li>
-              <strong>Replay</strong> — after LoopQA on the public URL, mark the
-              session complete in the dashboard.
+              <span className="landing-step-body">
+                <strong>Replay</strong> — after LoopQA on the public URL, mark
+                the session complete in the dashboard.
+              </span>
             </li>
           </ol>
         </div>
@@ -82,8 +96,8 @@ export function LandingExplainer() {
         <div className="landing-block">
           <h3>How each integration is wired</h3>
           <p className="landing-lead">
-            Each tool owns one job in the loop. Here is what it does, what API
-            or action it uses, and how that shows up on the dashboard above.
+            Each tool owns one job in the loop: what it does, how it connects,
+            and where it shows up above.
           </p>
 
           <div className="landing-stack">
@@ -93,16 +107,14 @@ export function LandingExplainer() {
                 <h4>Answer memory</h4>
               </div>
               <ul className="landing-list">
+                <li>Lookup runs before Pioneer on every task.</li>
                 <li>
-                  Lookup runs <em>before</em> Pioneer on every task.
+                  Seed + runtime JSON (no database). Hits raise Memory hits and
+                  dollars avoided.
                 </li>
                 <li>
-                  Stored as seed + runtime JSON (no database). Hits raise Memory
-                  hits and dollars avoided.
-                </li>
-                <li>
-                  Activity logs <code>source: memory</code>. Table shows reused
-                  questions, tier, and quality.
+                  Activity logs <code>source: memory</code>; table lists reused
+                  questions.
                 </li>
               </ul>
             </article>
@@ -114,20 +126,16 @@ export function LandingExplainer() {
               </div>
               <ul className="landing-list">
                 <li>
-                  OpenAI-compatible chat completions at Pioneer (
+                  OpenAI-compatible chat at Pioneer (
                   <code>PIONEER_BASE_URL</code>).
                 </li>
                 <li>
-                  Policy maps task features → cheap / mid / premium model + max
+                  Policy maps task features → cheap / mid / premium + max
                   tokens.
                 </li>
                 <li>
-                  Dashboard: Batch cost, Saved vs premium, Routing policy rules,
-                  generation cost bars.
-                </li>
-                <li>
-                  If inference is unavailable, local answers keep the loop
-                  moving so policy evolution still runs.
+                  Shows in Batch cost, Saved vs premium, Routing policy, and
+                  generation bars.
                 </li>
               </ul>
             </article>
@@ -139,18 +147,15 @@ export function LandingExplainer() {
               </div>
               <ul className="landing-list">
                 <li>
-                  Pulls ground-truth context via{" "}
-                  <code>/org/search/context</code>.
+                  Ground-truth context via <code>/org/search/context</code>.
                 </li>
                 <li>
-                  Quality is scored against those facts, not self-graded by the
-                  answering model.
+                  Quality scored against facts, not self-graded by the answering
+                  model.
                 </li>
                 <li>
-                  Floor is 0.90. Below that, Guild will not promote the
-                  challenger.
+                  Floor 0.90 — below that, Guild will not promote.
                 </li>
-                <li>Dashboard: Quality metric and Senso-tagged activity.</li>
               </ul>
             </article>
 
@@ -161,19 +166,15 @@ export function LandingExplainer() {
               </div>
               <ul className="landing-list">
                 <li>
-                  After each challenger batch, opens a Guild agent-test session
-                  with quality, cost, and savings in the input.
+                  Agent-test session after each challenger batch (quality, cost,
+                  savings in input).
                 </li>
                 <li>
-                  Promote → new routing policy becomes current (version bumps,
-                  rules update).
+                  Promote bumps policy version and rules; reject keeps the
+                  incumbent.
                 </li>
                 <li>
-                  Reject → keep the incumbent policy; try again next generation.
-                </li>
-                <li>
-                  Dashboard: Activity decision + Open Guild trace link; Routing
-                  policy shows the live rules.
+                  Activity shows the decision and an Open Guild trace link.
                 </li>
               </ul>
             </article>
@@ -185,15 +186,11 @@ export function LandingExplainer() {
               </div>
               <ul className="landing-list">
                 <li>
-                  On Guild promote only: posts policy version, quality, batch
-                  cost, and savings % to the configured Band chat.
+                  On promote only: posts version, quality, cost, and savings %
+                  to the Band chat.
                 </li>
                 <li>
-                  Keeps ops in the loop without opening the dashboard.
-                </li>
-                <li>
-                  Dashboard: Activity events tagged <code>band</code> (live or
-                  cached if keys are missing).
+                  Activity events tagged <code>band</code> (live or cached).
                 </li>
               </ul>
             </article>
@@ -205,17 +202,11 @@ export function LandingExplainer() {
               </div>
               <ul className="landing-list">
                 <li>
-                  Outside the generation loop. Use Replay / LoopQA against the
-                  public URL after ship.
+                  Outside the generation loop — LoopQA against the public URL.
                 </li>
                 <li>
-                  Mark Replay QA calls{" "}
-                  <code>POST /api/darwin</code> with{" "}
+                  Mark Replay QA → <code>POST /api/darwin</code>{" "}
                   <code>{`{ "action": "mark-replay" }`}</code>.
-                </li>
-                <li>
-                  Dashboard: Replay row under Answer memory; Activity gets a QA
-                  complete event.
                 </li>
               </ul>
             </article>
@@ -225,14 +216,9 @@ export function LandingExplainer() {
         <div className="landing-block landing-goal">
           <h3>Success criteria</h3>
           <ul className="landing-list">
-            <li>Quality stays at or above 90%.</li>
-            <li>
-              Batch cost drops at least 40% versus the always-premium baseline.
-            </li>
-            <li>
-              Memory hits compound savings on any question the system has
-              already solved.
-            </li>
+            <li>Quality at or above 90%.</li>
+            <li>Batch cost at least 40% below always-premium.</li>
+            <li>Memory hits compound savings on solved questions.</li>
           </ul>
         </div>
       </div>

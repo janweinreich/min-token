@@ -342,58 +342,84 @@ button {
 .sponsor-credit {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.4rem 0.2rem 0.3rem;
+  justify-content: center;
+  padding: 0.35rem 0.45rem;
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--bg);
+  line-height: 0;
 }
 
 .sponsor-credit.compact {
-  padding: 0.15rem 0.3rem;
+  padding: 0.28rem 0.38rem;
 }
 
 .sponsor-credit-logo {
   display: block;
-  height: 1.35rem;
+  height: 1.85rem;
   width: auto;
-  max-width: 5.75rem;
+  max-width: 7.5rem;
   object-fit: contain;
 }
 
 .sponsor-credit.compact .sponsor-credit-logo {
-  height: 1.15rem;
-  max-width: 4.5rem;
+  height: 1.55rem;
+  max-width: 6.25rem;
 }
 
 .sponsor-credit-logo.replay {
-  height: 1.35rem;
-  width: 1.35rem;
+  height: 1.85rem;
+  width: 1.85rem;
 }
 
 .sponsor-credit.compact .sponsor-credit-logo.replay {
-  height: 1.15rem;
-  width: 1.15rem;
+  height: 1.55rem;
+  width: 1.55rem;
 }
 
 .sponsor-credit-mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.2rem;
-  height: 1.2rem;
-  border-radius: 4px;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 5px;
   background: var(--ink);
   color: var(--bg);
-  font-size: 0.68rem;
+  font-size: 0.78rem;
   font-weight: 700;
+  line-height: 1;
 }
 
-.sponsor-credit-feature {
-  font-size: 0.7rem;
-  font-weight: 550;
-  color: var(--muted);
-  text-transform: lowercase;
+.sponsor-credit.compact .sponsor-credit-mark {
+  width: 1.4rem;
+  height: 1.4rem;
+  font-size: 0.72rem;
+}
+
+.landing-card .sponsor-credit {
+  padding: 0.45rem 0.55rem;
+}
+
+.landing-card .sponsor-credit-logo {
+  height: 2.25rem;
+  max-width: 9rem;
+}
+
+.landing-card .sponsor-credit-logo.replay {
+  height: 2.25rem;
+  width: 2.25rem;
+}
+
+.landing-card .sponsor-credit-mark {
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.9rem;
+}
+
+.replay-row .sponsor-credit-logo.replay {
+  height: 2rem;
+  width: 2rem;
 }
 
 .feed {
@@ -613,11 +639,11 @@ button {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 2.25rem;
 }
 
 .landing-head {
-  max-width: 40rem;
+  max-width: 42rem;
 }
 
 .landing-kicker {
@@ -688,15 +714,15 @@ button {
   counter-reset: step;
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.7rem;
   max-width: 44rem;
 }
 
 .landing-steps li {
   counter-increment: step;
-  display: grid;
-  grid-template-columns: 1.75rem 1fr;
-  gap: 0.65rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
   color: var(--muted);
   font-size: 1.02rem;
   line-height: 1.45;
@@ -704,6 +730,7 @@ button {
 
 .landing-steps li::before {
   content: counter(step);
+  flex: 0 0 1.75rem;
   font-family: var(--font-mono);
   font-size: 0.85rem;
   font-weight: 550;
@@ -716,6 +743,12 @@ button {
   align-items: center;
   justify-content: center;
   background: var(--surface);
+  margin-top: 0.05rem;
+}
+
+.landing-step-body {
+  flex: 1;
+  min-width: 0;
 }
 
 .landing-steps strong {
@@ -724,9 +757,15 @@ button {
 }
 
 .landing-stack {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
+}
+
+@media (max-width: 800px) {
+  .landing-stack {
+    grid-template-columns: 1fr;
+  }
 }
 
 .landing-card {

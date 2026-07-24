@@ -213,8 +213,8 @@ export function MintokenApp({ initial }: { initial: DarwinState }) {
               <div className="panel-h">
                 <span>Activity</span>
                 <div className="panel-credits">
-                  <SponsorCredit id="guild" />
-                  <SponsorCredit id="band" />
+                  <SponsorCredit id="guild" compact />
+                  <SponsorCredit id="band" compact />
                 </div>
               </div>
               <div className="panel-b">
@@ -252,8 +252,7 @@ export function MintokenApp({ initial }: { initial: DarwinState }) {
                 <div className="panel-h">
                   <span>Routing policy</span>
                   <div className="panel-credits">
-                    <SponsorCredit id="pioneer" />
-                    <SponsorCredit id="guild" />
+                    <SponsorCredit id="pioneer" compact />
                     <a
                       href="/api/darwin?view=policy"
                       target="_blank"
@@ -321,7 +320,7 @@ export function MintokenApp({ initial }: { initial: DarwinState }) {
                 <div className="panel-h">
                   <span>Answer memory</span>
                   <div className="panel-credits">
-                    <SponsorCredit id="memory" />
+                    <SponsorCredit id="memory" compact />
                     <a
                       href="/api/darwin?view=memory"
                       target="_blank"
@@ -363,10 +362,7 @@ export function MintokenApp({ initial }: { initial: DarwinState }) {
                 <SponsorCredit id="replay" />
                 <div className="replay-copy">
                   <strong>Replay LoopQA</strong>
-                  <span>
-                    After QA on the public URL, mark the session. Sets Replay
-                    complete and logs it in Activity.
-                  </span>
+                  <span>Mark after QA on the public URL.</span>
                 </div>
                 <button
                   type="button"
