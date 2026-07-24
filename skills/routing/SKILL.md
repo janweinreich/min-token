@@ -1,6 +1,6 @@
 # Routing Skill v1
 
-> Generated 2026-07-24T22:44:17.011Z from policy v1. **Do not edit by hand** — this file is recompiled on every policy promotion, and every rule below is derived from a policy parameter or from measured routing episodes.
+> Generated 2026-07-24T22:50:57.345Z from policy v1. **Do not edit by hand** — this file is recompiled on every policy promotion, and every rule below is derived from a policy parameter or from measured routing episodes.
 
 ## Goal
 
@@ -34,9 +34,9 @@ Learned by having **claude-sonnet-5** answer each question, having every cheaper
 
 | task class | n | use this model | accepted on | mean cost saving |
 |---|---:|---|---:|---:|
-| comparison | 2 | `claude-sonnet-5` _(too few examples — held at the reference)_ | 100% | 0% |
+| comparison | 4 | `claude-haiku-4-5` | 100% | 53% |
 | explanation | 1 | `claude-sonnet-5` _(too few examples — held at the reference)_ | 100% | 0% |
-| lookup | 4 | `gpt-5-nano` | 75% | 98% |
+| lookup | 6 | `gpt-5-nano` | 83% | 97% |
 | unknown | 4 | `claude-haiku-4-5` | 100% | 58% |
 
 A model is only recommended for a class when it was accepted on a **majority** of that class. Cheapest-ever-accepted would overfit to one lucky question and route the whole class to a model that usually fails.

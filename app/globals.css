@@ -367,3 +367,40 @@ button.mode:disabled { opacity: 0.5; cursor: default; }
 .lrow.ok .lb { color: #7dd3fc; }
 .lrow.bad { opacity: 0.62; }
 .lrow.bad .lb { color: #f59e0b; }
+
+/* ── evolution timeline: the agent's own history ── */
+ol.timeline { list-style: none; margin: 0; padding: 0 0 0 4px; }
+li.ev {
+  position: relative;
+  padding: 0 0 11px 16px;
+  border-left: 1px solid #1e293b;
+  font-size: 11px;
+}
+li.ev:last-child { border-left-color: transparent; padding-bottom: 0; }
+li.ev .dot2 {
+  position: absolute; left: -4px; top: 3px;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #334155; border: 1px solid #0f172a;
+}
+li.ev.big .dot2 { background: #4ade80; }
+li.ev .q { color: #cbd5e1; }
+li.ev .meta { color: #64748b; font-size: 10px; margin-top: 1px; }
+li.ev .meta b { color: #94a3b8; }
+li.ev .chg {
+  margin-top: 3px; padding: 3px 6px;
+  border-radius: 4px; background: #052e1a; border: 1px solid #166534;
+  color: #86efac; font-size: 10px;
+}
+li.ev .chg b { color: #4ade80; }
+li.ev .chg em { font-style: normal; color: #4d7c5f; }
+li.ev .chg.prompt { background: #1c1633; border-color: #7c3aed; color: #ddd6fe; }
+
+ul.changes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+ul.changes li {
+  font-size: 11px; padding: 6px 8px; border-radius: 5px;
+  background: #052e1a; border: 1px solid #166534; color: #86efac;
+}
+ul.changes li b { color: #4ade80; }
+ul.changes li code { background: none; padding: 0; color: #94a3b8; }
+ul.changes li code.good { color: #4ade80; }
+ul.changes li em { font-style: normal; display: block; font-size: 9.5px; color: #4d7c5f; margin-top: 1px; }

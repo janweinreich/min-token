@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 
 type Rejection = { memoryId: string; reasons: string[] };
+type Change = { taskType: string; from: string | null; to: string; n: number; kind: string };
+type LearningEvent = {
+  at: string; question: string; taskType: string; winner: string | null;
+  savingPct: number; trainingSetSize: number; changes: Change[]; promptRewritten: boolean;
+};
 type Learned = { taskType: string; leanTried: number; cleanWins: number; lcb: number; verdict: string };
 
 interface Res {
@@ -44,6 +49,9 @@ interface Res {
   routerModel?: string;
   distilledRulesAvailable?: number;
   routerPromptSynthesized?: boolean;
+  learningLog?: LearningEvent[];
+  lessonsLearned?: number;
+  promptVersion?: number;
   tools: { sponsor: string; what: string; live: boolean; detail: string }[];
   error?: string;
 }
@@ -82,6 +90,7 @@ interface TrainRes {
   saving: { tokens: number; costUsd: number; pct: number } | null;
   trainingSetSize: number;
   rules: Array<{ taskType: string; recommended: string; n: number; support: number; confident: boolean }>;
+  changes: Change[];
   promptUpdated: boolean;
   untilResynth: number;
   resynthEvery: number;
@@ -156,8 +165,9 @@ export default function Page() {
           <b>BudgetDarwin</b> <span className="dim">— the cheapest model that still answers well</span>
         </div>
         <div className="spacer" />
-        <div className="pill">{view?.distilledRulesAvailable ?? 0} learned rules</div>
-        <div className="pill">{view?.episodeCount ?? 0} episodes</div>
+        <div className="pill">{status?.lessonsLearned ?? 0} lessons</div>
+        <div className="pill">prompt v{status?.promptVersion ?? 0}</div>
+        <div className="pill">{view?.distilledRulesAvailable ?? 0} rules</div>
       </header>
 
       <div className="cols">
@@ -279,6 +289,31 @@ export default function Page() {
                     which model produced it. This lesson cost {train.trainingTokens} tokens
                     ({usd(train.trainingCostUsd)}) — training is what you pay once so serving is cheap.
                   </p>
+
+                  <h2>What changed</h2>
+                  {train.changes?.length ? (
+                    <ul className="changes">
+                      {train.changes.map((c, i) => (
+                        <li key={i}>
+                          <b>{c.taskType}</b>{" "}
+                          {c.from ? (
+                            <>
+                              <code>{c.from}</code> → <code className="good">{c.to}</code>
+                            </>
+                          ) : (
+                            <code className="good">{c.to}</code>
+                          )}
+                          <em>{c.kind} · n={c.n}</em>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="tiny dim">
+                      This example agreed with what the agent already believed, so no rule moved.
+                      Most lessons confirm rather than overturn — a policy that flipped on every
+                      example would be fitting noise.
+                    </p>
+                  )}
 
                   <h2>Training data</h2>
                   <p className="tiny">
@@ -421,6 +456,35 @@ export default function Page() {
             </ul>
           ) : (
             <p className="dim">—</p>
+          )}
+
+          <h2>How it got here</h2>
+          {status?.learningLog?.length ? (
+            <ol className="timeline">
+              {status.learningLog.map((e, i) => (
+                <li key={i} className={e.changes.length || e.promptRewritten ? "ev big" : "ev"}>
+                  <span className="dot2" />
+                  <div>
+                    <div className="q">{e.question.slice(0, 52)}{e.question.length > 52 ? "…" : ""}</div>
+                    <div className="meta">
+                      <code>{e.taskType}</code> → <b>{e.winner ?? "reference only"}</b>
+                      {e.savingPct > 0 && <span className="good"> −{Math.round(e.savingPct)}%</span>}
+                    </div>
+                    {e.changes.map((c, j) => (
+                      <div key={j} className="chg">
+                        {c.taskType}: {c.from ? `${c.from} → ` : ""}<b>{c.to}</b> <em>{c.kind}</em>
+                      </div>
+                    ))}
+                    {e.promptRewritten && <div className="chg prompt">router prompt rewritten</div>}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="tiny dim">
+              Nothing learned yet. Switch to <b>LEARN FROM THIS</b> and ask something — each lesson
+              appends here and the rules move when the evidence says so.
+            </p>
           )}
 
           <button className="disclose" onClick={() => setShowDetail(!showDetail)}>

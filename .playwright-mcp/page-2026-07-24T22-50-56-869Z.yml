@@ -1,0 +1,47 @@
+- main [ref=f4e2]:
+  - generic [ref=f4e3]:
+    - generic [ref=f4e4]: BudgetDarwin — the cheapest model that still answers well
+    - generic [ref=f4e5]: 0 lessons
+    - generic [ref=f4e6]: prompt v0
+    - generic [ref=f4e7]: 0 rules
+  - generic [ref=f4e8]:
+    - generic [ref=f4e9]:
+      - generic [ref=f4e10]:
+        - paragraph [ref=f4e11]: "Ask these three in order:"
+        - list [ref=f4e12]:
+          - listitem [ref=f4e13]: a question → generates
+          - listitem [ref=f4e14]: a paraphrase → replays at 0 tokens
+          - listitem [ref=f4e15]: the Python variant → refuses to replay
+      - generic [ref=f4e16]:
+        - textbox "ask anything…" [ref=f4e17]
+        - button "ask" [disabled] [ref=f4e18]
+      - generic [ref=f4e19]:
+        - generic [ref=f4e20]:
+          - text: TRAINING MODE
+          - generic [ref=f4e21]: "OFF"
+        - button [ref=f4e22] [cursor=pointer]:
+          - text: "OFF"
+          - emphasis [ref=f4e23]: keyword router · free
+        - button [ref=f4e24] [cursor=pointer]:
+          - text: LEARNED RULES
+          - emphasis [ref=f4e25]: distilled table · free
+        - button [ref=f4e26] [cursor=pointer]:
+          - text: MODEL READS SKILL
+          - emphasis [ref=f4e27]: ~625 tok/request
+        - button [ref=f4e28] [cursor=pointer]:
+          - text: LEARN FROM THIS
+          - emphasis [ref=f4e29]: runs every model · expensive
+      - generic [ref=f4e30]:
+        - button "What package installs the Actian JavaScrip…" [ref=f4e31] [cursor=pointer]
+        - button "Which npm package do I need for Actian Vec…" [ref=f4e32] [cursor=pointer]
+        - button "How do I install the Actian Python SDK?" [ref=f4e33] [cursor=pointer]
+    - complementary [ref=f4e34]:
+      - heading "This request" [level=2] [ref=f4e35]
+      - paragraph [ref=f4e36]: Ask something to see the comparison.
+      - heading "This session" [level=2] [ref=f4e37]
+      - paragraph [ref=f4e38]: —
+      - heading "How it saved" [level=2] [ref=f4e39]
+      - paragraph [ref=f4e40]: —
+      - heading "How it got here" [level=2] [ref=f4e41]
+      - paragraph [ref=f4e42]: Nothing learned yet. Switch to LEARN FROM THIS and ask something — each lesson appends here and the rules move when the evidence says so.
+      - button "show the evidence" [ref=f4e43] [cursor=pointer]

@@ -76,7 +76,21 @@ export async function POST(req: Request) {
       .filter((l) => l.trim())
       .map((l) => JSON.parse(l) as TrainingExample);
 
+    // Snapshot the rules BEFORE this example so the change is recordable.
+    // "What the agent knows" is a state; "what it just learned" is a diff, and
+    // only the diff shows evolution.
+    const before = aggregate(all.slice(0, -1));
     const rules = aggregate(all);
+    const changes: Array<{ taskType: string; from: string | null; to: string; n: number; kind: string }> = [];
+    for (const r of rules) {
+      const b = before.find((x) => x.taskType === r.taskType);
+      if (!b) changes.push({ taskType: r.taskType, from: null, to: r.recommended, n: r.n, kind: "new class" });
+      else if (b.recommended !== r.recommended)
+        changes.push({ taskType: r.taskType, from: b.recommended, to: r.recommended, n: r.n, kind: "route changed" });
+      else if (!b.confident && r.confident)
+        changes.push({ taskType: r.taskType, from: b.recommended, to: r.recommended, n: r.n, kind: "now confident" });
+    }
+
     await writeFile(
       "artifacts/routing-rules.json",
       JSON.stringify({ generatedAt: new Date().toISOString(), rules }, null, 2) + "\n",
@@ -97,6 +111,24 @@ export async function POST(req: Request) {
       prompt = await readFile("artifacts/router-prompt.md", "utf8").catch(() => "");
     }
 
+    // The learning log is the agent's own history. Without it every reload
+    // looks like the first question it has ever seen.
+    await appendFile(
+      "artifacts/learning-log.jsonl",
+      JSON.stringify({
+        at: new Date().toISOString(),
+        question: example.question,
+        taskType: example.taskType,
+        winner: example.cheapestAcceptable,
+        rejected: example.candidates.filter((c) => !c.acceptable).map((c) => c.model),
+        savingPct: example.savingVsReference?.pct ?? 0,
+        trainingSetSize: all.length,
+        changes,
+        promptRewritten: promptUpdated,
+      }) + "\n",
+      "utf8",
+    );
+
     const refCandidate = {
       model: example.referenceModel,
       totalTokens: example.referenceTokens,
@@ -112,6 +144,7 @@ export async function POST(req: Request) {
       saving: example.savingVsReference,
       trainingSetSize: all.length,
       rules,
+      changes,
       promptUpdated,
       resynthEvery: RESYNTH_EVERY,
       untilResynth: (RESYNTH_EVERY - (all.length % RESYNTH_EVERY)) % RESYNTH_EVERY,

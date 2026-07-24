@@ -329,11 +329,38 @@ export type RouterMode = "off" | "learned" | "llm";
  * distilled rules yet" while four rules sit on disk — a demo that understates
  * itself for the first thirty seconds.
  */
+export interface LearningEvent {
+  at: string;
+  question: string;
+  taskType: string;
+  winner: string | null;
+  savingPct: number;
+  trainingSetSize: number;
+  changes: Array<{ taskType: string; from: string | null; to: string; n: number; kind: string }>;
+  promptRewritten: boolean;
+}
+
+/** The agent's own history. Re-read each time so it reflects live training. */
+async function learningLog(): Promise<LearningEvent[]> {
+  try {
+    return (await readFile("artifacts/learning-log.jsonl", "utf8"))
+      .split("\n")
+      .filter((l) => l.trim())
+      .map((l) => JSON.parse(l) as LearningEvent);
+  } catch {
+    return [];
+  }
+}
+
 export async function status() {
   const a = agent();
   await a.ready;
   const rules = await distilledRules();
+  const log = await learningLog();
   return {
+    learningLog: log.slice(-12).reverse(),
+    lessonsLearned: log.length,
+    promptVersion: log.filter((e) => e.promptRewritten).length,
     distilledRulesAvailable: rules?.length ?? 0,
     routerPromptSynthesized: (await synthesizedPrompt()) !== null,
     routerModel: ROUTER_MODEL,
@@ -471,6 +498,9 @@ export async function handle(question: string, autoApprove: boolean, mode: Route
     routerModel: ROUTER_MODEL,
     distilledRulesAvailable: (await distilledRules())?.length ?? 0,
     routerPromptSynthesized: (await synthesizedPrompt()) !== null,
+    learningLog: (await learningLog()).slice(-12).reverse(),
+    lessonsLearned: (await learningLog()).length,
+    promptVersion: (await learningLog()).filter((e) => e.promptRewritten).length,
     episodeCount: a.episodes.length,
     seededEpisodes: a.seeded,
   };
