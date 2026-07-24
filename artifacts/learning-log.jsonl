@@ -6,3 +6,4 @@
 {"at":"2026-07-24T22:54:48.740Z","question":"how do i make apple pi","taskType":"unknown","winner":"gpt-5-nano","rejected":[],"savingPct":96.3203794369645,"trainingSetSize":18,"changes":[],"promptRewritten":true}
 {"at":"2026-07-24T22:59:14.690Z","question":"What is the speed of light in a vacuum?","taskType":"lookup","winner":"gpt-5-nano","rejected":[],"savingPct":98.4278350515464,"trainingSetSize":19,"changes":[],"promptRewritten":false}
 {"at":"2026-07-24T23:04:35.707Z","question":"What is the largest ocean on Earth?","taskType":"lookup","winner":"gpt-5-nano","rejected":[],"savingPct":98.89660493827161,"trainingSetSize":20,"changes":[],"promptRewritten":false}
+{"at":"2026-07-24T23:08:09.914Z","question":"what is important when building a startup","taskType":"lookup","winner":"claude-haiku-4-5","rejected":["gpt-5-nano"],"savingPct":52.96817625458996,"trainingSetSize":21,"changes":[],"promptRewritten":true}
