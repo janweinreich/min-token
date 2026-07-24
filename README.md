@@ -1,9 +1,11 @@
 # mintoken
 
-mintoken evolves how LLM calls are routed to cut spend without losing quality.
-Every prompt checks answer memory first, routes a Pioneer cheap, mid, or premium
-tier on a miss, grounds quality with Senso, and asks Guild whether the cheaper
-policy deserves promotion. Band announces wins and Replay closes the QA loop.
+mintoken reduces LLM inference cost by choosing a model per request and reusing
+approved answers when it is safe to do so. The application keeps the existing
+chat and metrics interface while its backend uses the BudgetDarwin routing,
+memory, training, and evaluation pipeline.
+
+## Run locally
 
 ```bash
 pnpm install
@@ -11,112 +13,156 @@ cp .env.example .env.local
 pnpm dev
 ```
 
-Open `http://localhost:3000`. Sponsor keys are optional for the demo. Each
-adapter falls back to local answers, local Guild decisions, or cached events if
-a key is missing or a provider is unavailable.
+Open `http://localhost:3000`.
 
-## Demo flow
+`PIONEER_API_KEY` enables live Pioneer inference. Without it, the core agent
+falls back to the configured Anthropic provider. The UI state and default vector
+store are process-local, so they reset when the server instance restarts.
 
-1. Type any question in the bottom composer. The first ask measures the
-   always-premium baseline, then runs the prompt through the active challenger.
-2. Watch Quality, Prompt cost, Saved vs premium, Activity, and Routing policy
-   update from the returned Darwin state.
-3. Ask the exact same question again. Answer memory returns the prior answer at
-   zero compute and increments Memory hits.
-4. Create another chat and switch between threads from the left sidebar.
-5. Mark Replay QA after validating the public experience.
-6. Reset to clear runtime sessions and metrics while keeping seeded memory.
+## Application functionality
 
-The state store and runtime answer memory are process-local. They are
-intentionally ephemeral on Vercel and reset when the instance restarts.
+### Model routing
 
----
+For a new question, mintoken classifies the task and applies its learned routing
+rules. The current model ladder uses `gpt-5-nano` for inexpensive lookups,
+`claude-haiku-4-5` for stronger general responses, `claude-sonnet-5` as the
+reference model, and `pioneer/auto` for code-related requests.
 
-## Measured results
+The router can run in three modes:
 
-Every number here came from real Pioneer calls with provider-reported usage. Nothing is modelled.
+- `off`: use the built-in deterministic classifier.
+- `learned`: apply the distilled routing table with zero router tokens.
+- `llm`: ask a small model to read the synthesized routing prompt and select a
+  model. Router tokens are included in total usage, so routing overhead cannot
+  be reported as savings.
 
-**Routing** — 20 dev cases, scored against facts verifiable in the corpus:
+The Hugging Face UI calls the `learned` mode through
+`src/engine/core-loop.ts`.
 
-| | quality | tokens |
+### Answer memory and replay
+
+Every question checks answer memory before model generation. Exact matches can
+replay directly; semantic matches must pass similarity, margin, entity,
+operation, polarity, version, snapshot, and approval checks.
+
+An accepted replay returns before the inference provider is reachable. It
+therefore uses zero generation tokens. If the replay guard cannot verify the
+important differences between two questions, it refuses semantic replay and
+generates a new answer instead.
+
+### Training
+
+`pnpm train` uses `claude-sonnet-5` as a reference, tests cheaper models on the
+same questions, and records the cheapest acceptable model for each task class.
+The accepted examples are distilled into `artifacts/routing-rules.json`, while a
+reference model synthesizes `artifacts/router-prompt.md`.
+
+`POST /api/train` runs the same process for one question and records the result
+in `artifacts/learning-log.jsonl`. It returns the candidates, judge decisions,
+winning model, training cost, rule changes, and whether the router prompt was
+rewritten.
+
+### Measurement
+
+The API returns provider-reported token usage, selected model, route, latency,
+estimated model cost, and savings against the measured always-strong baseline.
+The Hugging Face UI adapter maps those values into its existing quality, cost,
+memory, activity, and policy panels.
+
+The committed 20-case routing benchmark measured:
+
+| Strategy | Quality | Tokens |
 |---|---:|---:|
-| lean only | 0.911 | 6,619 |
-| always-strong | 0.937 | 15,291 |
-| **router** | **0.947** | **12,501** |
+| Lean only | 0.911 | 6,619 |
+| Always strong | 0.937 | 15,291 |
+| Router | 0.947 | 12,501 |
 
-The router beats *both* fixed strategies on quality while spending **18.2% fewer tokens than always-strong**. Routing lookups cheap and comparisons expensive beats doing either uniformly.
+On that benchmark, the router used 18.2% fewer tokens than always strong.
 
-**Replay** — same questions asked twice, paraphrased the second time:
+The replay benchmark measured 1,360 tokens for cold requests and 393 tokens
+after three of four paraphrased questions replayed, a 71.1% reduction. The
+replay safety set passed 20 of 20 probes; its Wilson 95% lower bound is 0.839.
 
+## Sponsor integrations
+
+### Pioneer
+
+Pioneer serves the models used for live answers and exposes the model and usage
+data that mintoken records for each request. mintoken also calls Pioneer during
+training to compare cheaper models against `claude-sonnet-5`, allowing the
+system to move large volumes of suitable requests away from the reference
+model instead of paying its rate by default.
+
+### Senso
+
+The Darwin evolution loop calls Senso's `/org/search/context` endpoint and puts
+the returned source chunks into the generation prompt. Those chunks are also
+used when scoring whether a cheaper policy remains above the configured quality
+floor, preventing a cost reduction from being accepted solely because it used
+fewer tokens. The current Hugging Face chat path uses the BudgetDarwin local
+context provider; the Senso adapter remains available in `src/adapters/senso.ts`
+for the batch evolution path.
+
+### Guild
+
+After a Darwin challenger batch, mintoken sends its baseline cost, challenger
+cost, challenger quality, minimum quality, and maximum cost ratio into a Guild
+agent-test session. A challenger is promoted only when it meets both thresholds,
+so a large apparent saving cannot replace the active policy if quality falls
+below the floor. The Guild step is implemented in the batch evolution path and
+is not called by each Hugging Face chat request.
+
+### Band
+
+When Guild promotes a Darwin policy, mintoken posts the policy version, quality,
+batch cost, and savings percentage to a Band operations chat. If no chat exists,
+the adapter can create `mintoken ops`; if Band is unavailable, it records the
+same message as a cached application event. Band is only called after a
+promotion, not for normal questions or rejected challengers.
+
+### Replay
+
+The UI includes a Replay LoopQA action for recording that the deployed public
+experience was tested. Separately, mintoken's replay guard decides whether a
+stored answer can safely replace a new Pioneer call; accepted matches reduce
+that request to zero generation tokens. The safety benchmark includes both
+paraphrases that must replay and near-matches that must be rejected.
+
+## API routes
+
+| Route | Purpose |
+|---|---|
+| `POST /api/darwin` | Chat, session, reset, and Replay QA actions for the current UI |
+| `POST /api/ask` | Direct BudgetDarwin question endpoint |
+| `GET /api/status` | Learned rules, episodes, measured results, and training history |
+| `POST /api/train` | Run one live model-distillation training example |
+| `GET /api/skill` | Return the generated routing skill |
+
+## Commands
+
+| Command | Requires provider key | Purpose |
+|---|---:|---|
+| `pnpm dev` | For live inference | Start the development server |
+| `pnpm build` | No | Create the production build |
+| `pnpm test` | No | Run unit and integration tests |
+| `pnpm replay-safety` | No | Evaluate replay-only safety probes |
+| `pnpm measure-ungated` | No | Measure why ungated semantic replay is unsafe |
+| `pnpm calibrate` | No | Measure embedding similarity behavior |
+| `pnpm savings` | Yes | Compare cold generation with warm replay |
+| `pnpm evolve` | Yes | Run the benchmark and policy promotion gate |
+| `pnpm train` | Yes | Distill model choices into routing rules |
+| `pnpm router-overhead` | Yes | Compare zero-token rules with LLM-based routing |
+
+## Main implementation files
+
+```text
+app/agent.ts                         agent initialization, status, routing, usage
+src/engine/core-loop.ts              BudgetDarwin-to-Hugging-Face UI adapter
+packages/core/src/pipeline.ts        replay, retrieval, routing, generation
+packages/core/src/replay-guard.ts    replay eligibility and safety checks
+packages/core/src/router.ts          route selection and learned history
+packages/core/src/evolution.ts       candidate evaluation and promotion gate
+packages/core/src/eval/scorer.ts     quality and failure scoring
+packages/core/src/train/             model comparison and rule distillation
+src/adapters/                        Senso, Guild, Band, and Darwin Pioneer adapters
 ```
-cold  (all generated) : 1360 tokens
-warm  (3/4 replayed)  :  393 tokens   -> 71.1% saved
-```
-
-**Replay safety** — 20 probes, 7 that must replay and 13 that must not: **20/20 correct**, Wilson 95% lower bound **0.839**. That bound is the ceiling for 20 probes; supporting a ≥0.95 claim needs roughly 80. We report the bound, not the point estimate.
-
-**Training mode: the router that did not pay for itself.** A strong model judges which cheaper model would have sufficed, and the accepted labels are distilled into per-class rules. Serving those rules two ways, over 8 questions against an always-haiku baseline:
-
-| how the rules are used | router tokens | net vs baseline |
-|---|---:|---:|
-| **applied as a lookup** | **0** | **cheaper model, no overhead** |
-| read by a cheap model at request time | ~470/request | **−4,404 tokens, −$0.023, 0/8 wins** |
-
-The LLM router's cost is *fixed* per request while its saving scales with answer length, so on short answers the overhead exceeds the whole answer — and when it upgrades a question it pays twice, once to decide and once for the longer answer. The distillation is the valuable part; reading a lookup table does not need an LLM. Both paths ship, switchable in the UI, because showing the comparison is more honest than asserting the winner. `artifacts/router-overhead.json`.
-
-Run them yourself: `pnpm replay-safety` (no API key, no network, milliseconds), `pnpm savings`, `pnpm evolve`, `pnpm router-overhead`.
-
----
-
-## What is real, and what is not
-
-Worth stating plainly, because the interesting parts are the limits.
-
-**Real:** all token counts are provider-reported; the router runs on every request; replay safety is measured; quality comes from scoring answers a model actually produced.
-
-**Found by testing, not by design:** the replay gate is a *closed* lexicon of software entities, so when the agent started answering general-knowledge questions it had nothing to check and fell back to cosine alone — which served the stored *boiling* point of water for a question about the *freezing* point, at similarity 0.803. Measurement showed no threshold can fix it: "when did WWII begin" vs "…end" scores 0.922, **higher** than a genuine paraphrase at 0.852 (`pnpm measure-ungated`). Semantic replay now refuses when the query raises no entity the gate can verify. That deliberately gives up real savings on general-knowledge paraphrases; exact repeats still replay at zero tokens.
-
-**Not yet:** the benchmark is 20 dev / 8 holdout cases, which is small. It contains no abstain and no code cases, so two of the five routing rules are covered by unit tests but unmeasured end to end. The per-request "always-strong would have cost ~765" in the UI is an **estimate** from measured per-case averages — the header's benchmark comparison is the hard number.
-
-**The evolution loop has promoted nothing so far, and that is the honest result.** Twice a candidate won on the dev set — once with *better* quality and 16% fewer tokens — and was then rejected by the holdout: quality 0.800 against the 0.900 floor, one critical failure, a single case collapsing to 0.250. Dev said ship it; held-out data said no. A loop that promotes nothing when nothing is safe is the gate working.
-
----
-
-## How it works
-
-**Replay is gated, not thresholded.** Sentence embeddings put the must-*reject* Python variant (0.755) *above* the must-*allow* paraphrase (0.524), so no similarity threshold separates them — the original spec's τ=0.97 fires on 1 of 3 legitimate paraphrases. So the question is embedded with entities **masked**, which measures question *shape* and gives recall, and a closed danger lexicon decides entity identity exactly, giving all of the precision. `packages/core/src/replay-guard.ts`.
-
-**Routing history is per task class,** estimated with a Beta lower bound and a pessimistic prior. The cheap route must *earn* its way in over repeated clean successes rather than being trusted by default. `packages/core/src/router.ts`.
-
-**The scorer is written adversarially,** because a token-minimizing search finds every weakness in the rubric it optimizes against. Two-sided length band (so shortening isn't free), rescaled similarity (so fluent nonsense scores 0), and omission-side hard failures — abstaining on an answerable question is a critical failure, since abstention is otherwise the global optimum. `packages/core/src/eval/scorer.ts`.
-
-**The agent writes down what it learns.** `skills/routing/SKILL.md` is compiled from the promoted policy plus measured episodes, regenerated on every promotion, and verified against the real router before it is written — a skill that misdescribes the code is worse than none, because an agent would follow it.
-
-```
-packages/core/src/
-  replay-guard.ts     masking, danger lexicon gate, replay decision
-  router.ts           route selection, per-class Beta lower bound
-  pipeline.ts         ask(): replay -> retrieve -> route -> generate
-  policy.ts           the ~10 evolving numbers, with hard bounds
-  evolution.ts        candidates, paired non-inferiority, promotion gate
-  eval/scorer.ts      the adversarially-hardened rubric
-  skill-synthesis.ts  compiles policy + episodes into the routing skill
-```
-
-## Scripts
-
-| command | needs a key | what it does |
-|---|---|---|
-| `pnpm dev` | yes | the live app |
-| `pnpm test` | no | 83 tests, incl. replay proven against a *throwing* generator |
-| `pnpm replay-safety` | no | 20 probes, writes `artifacts/replay-safety.json` |
-| `pnpm measure-ungated` | no | why ungated semantic replay is refused, not retuned |
-| `pnpm calibrate` | no | the cosine measurement the whole design rests on |
-| `pnpm savings` | yes | cold-vs-warm token savings, with a safety control |
-| `pnpm evolve` | yes | full evolution cycle, regenerates the skill |
-| `pnpm train` | yes | judge-labelled distillation into `artifacts/routing-rules.json` |
-| `pnpm router-overhead` | yes | does the LLM router pay for itself? (measured: no) |
-
-## Stack
-
-Pioneer for inference (`claude-haiku-4-5` lean, `claude-sonnet-5` strong, `pioneer/auto` for code — all on one Anthropic-compatible adapter). `Xenova/all-MiniLM-L6-v2` locally for embeddings, so memory lookup costs zero generation tokens. In-process vector index; Actian VectorAI is a drop-in behind the same port.
