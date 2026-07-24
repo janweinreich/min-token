@@ -23,6 +23,7 @@ interface Res {
     leanTokensPerCase: number; strongTokensPerCase: number; cases: number;
   };
   episodeCount: number;
+  seededEpisodes?: number;
   grounded?: boolean;
   tools: { sponsor: string; what: string; live: boolean; detail: string }[];
   error?: string;
@@ -47,6 +48,7 @@ export default function Page() {
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
   const [log, setLog] = useState<Array<{ q: string; r: Res }>>([]);
+  const [skill, setSkill] = useState<string | null>(null);
   const last = log[log.length - 1]?.r;
 
   async function send(question: string) {
@@ -61,6 +63,9 @@ export default function Page() {
       });
       const r = (await res.json()) as Res;
       setLog((l) => [...l, { q: question, r }]);
+      // The agent rewrote its own skill from the new evidence — pull it back so
+      // the change is visible the moment it happens.
+      if (skill !== null) fetch("/api/skill").then((x) => x.text()).then(setSkill);
     } finally {
       setBusy(false);
     }
@@ -279,8 +284,30 @@ export default function Page() {
             </p>
           )}
 
+          <h2>
+            The skill it wrote for itself{" "}
+            <button
+              className="link"
+              onClick={async () => setSkill(skill === null ? await (await fetch("/api/skill")).text() : null)}
+            >
+              {skill === null ? "show" : "hide"}
+            </button>
+          </h2>
+          <p className="dim tiny">
+            Recompiled from the evidence above on every interaction, and verified against the real
+            router before it is written. <code style={{ display: "inline", padding: "1px 4px" }}>skills/routing/SKILL.md</code>
+          </p>
+          {skill !== null && <pre className="skill">{skill}</pre>}
+
           {last && (
             <div className="session">
+              {last.seededEpisodes ? (
+                <>
+                  seeded with <b>{last.seededEpisodes}</b> measured episodes (committed, from a real
+                  bootstrap run) · learned <b>{last.episodeCount - last.seededEpisodes}</b> more here
+                  <br />
+                </>
+              ) : null}
               session · {last.session.asks} asks · {last.session.replays} replayed at zero ·{" "}
               <b>{last.session.spent}</b> tokens spent ·{" "}
               <b className="good">{last.session.avoidedEst}</b> avoided <span className="est">est.</span>

@@ -12,6 +12,8 @@ import { ANSWER_MEMORY, ask, type AskResponse, type PipelineDeps } from "../pack
 import { DEFAULT_POLICY } from "../packages/core/src/policy.js";
 import { leanSuccessLowerBound, type RoutingEpisode } from "../packages/core/src/router.js";
 import { classifyTask } from "../packages/core/src/features.js";
+import { synthesizeRoutingSkill, type EpisodeRecord } from "../packages/core/src/skill-synthesis.js";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import {
   DEFAULT_REPLAY_POLICY,
   EXTRACTOR_VERSION,
@@ -43,7 +45,38 @@ export interface Agent {
   deps: PipelineDeps;
   episodes: RoutingEpisode[];
   session: { asks: number; spent: number; avoidedEst: number; replays: number };
+  /** How many of the episodes came from the committed measurement, not this session. */
+  seeded: number;
   ready: Promise<void>;
+}
+
+/**
+ * The agent writes down what it has learned, live.
+ *
+ * Previously only the offline evolution script emitted the skill, so during a
+ * demo the file sat stale while the agent quietly learned. Now every interaction
+ * that changes the evidence rewrites it — which is what makes "learns a routing
+ * policy and writes it down as a skill" literally true rather than aspirational.
+ */
+export async function writeSkill(a: Agent): Promise<string> {
+  const records: EpisodeRecord[] = a.episodes.map((e) => ({
+    similarity: e.similarity,
+    route: e.route,
+    passed: e.passed,
+    repaired: e.repaired,
+    taskType: e.taskType ?? "unknown",
+    generationTokens: e.generationTokens ?? 0,
+  }));
+  const md = synthesizeRoutingSkill({
+    policyVersion: 1,
+    policy: DEFAULT_POLICY,
+    episodes: records,
+    qualityFloor: 0.9,
+    generatedAt: new Date().toISOString(),
+  });
+  await mkdir("skills/routing", { recursive: true });
+  await writeFile("skills/routing/SKILL.md", md + "\n", "utf8");
+  return md;
 }
 
 declare global {
@@ -76,6 +109,7 @@ function build(): Agent {
     },
     episodes: [],
     session: { asks: 0, spent: 0, avoidedEst: 0, replays: 0 },
+    seeded: 0,
     ready: Promise.resolve(),
   };
 
@@ -84,6 +118,31 @@ function build(): Agent {
     await store.restore();
     await knowledge.load();
     agent.deps.corpusTerms = knowledge.corpusTerms();
+
+    // Seed from MEASURED evidence rather than starting blind. Without this the
+    // pessimistic prior sends everything to the strong model until lean earns its
+    // way in over ~8-10 clean successes, which no one is going to sit through.
+    // The file is written by scripts/evolve-live.ts from a real bootstrap probe,
+    // never hand-authored, and the count is disclosed in the UI.
+    try {
+      const seed = JSON.parse(await readFile("artifacts/episodes.json", "utf8")) as {
+        episodes: Array<{ taskType: string; route: string; passed: boolean; repaired: boolean; generationTokens: number }>;
+      };
+      agent.seeded = seed.episodes.length;
+      for (const e of seed.episodes) {
+        agent.episodes.push({
+          similarity: 1,
+          route: e.route as RoutingEpisode["route"],
+          passed: e.passed,
+          repaired: e.repaired,
+          taskType: e.taskType,
+          generationTokens: e.generationTokens,
+        });
+      }
+    } catch {
+      agent.seeded = 0;
+    }
+    await writeSkill(agent);
   })();
 
   return agent;
@@ -193,6 +252,8 @@ export async function handle(question: string, autoApprove: boolean) {
     if (autoApprove && r.answer.length > 40 && r.route !== "ABSTAIN") {
       await approve(a, question, r.answer);
     }
+    // The evidence changed, so the written-down skill changes with it.
+    await writeSkill(a);
   }
 
   // Which sponsor tech actually ran on THIS request. Reported per request rather
@@ -236,5 +297,6 @@ export async function handle(question: string, autoApprove: boolean) {
     measured: MEASURED,
     policyVersion: 1,
     episodeCount: a.episodes.length,
+    seededEpisodes: a.seeded,
   };
 }

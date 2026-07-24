@@ -122,3 +122,13 @@ td { padding: 4px 6px; border-bottom: 1px solid #1a2440; }
 }
 .dot.live { background: var(--good); box-shadow: 0 0 6px rgba(34,197,94,.7); }
 .tools .tiny { margin-left: 14px; }
+
+.link {
+  background: none; border: 0; color: var(--accent); font-size: 11px;
+  padding: 0 0 0 6px; text-decoration: underline; cursor: pointer; font-weight: 400;
+}
+.skill {
+  background: #0a1120; border: 1px solid var(--line); border-radius: 6px;
+  padding: 10px; font-size: 10.5px; line-height: 1.5; color: var(--dim);
+  max-height: 340px; overflow: auto; white-space: pre-wrap; margin: 8px 0 0;
+}

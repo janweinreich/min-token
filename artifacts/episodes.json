@@ -1,0 +1,1099 @@
+{
+  "measuredAt": "2026-07-24T19:06:40.000Z",
+  "source": "bootstrap probe over data/benchmarks/dev.jsonl, both routes forced",
+  "provider": "pioneer",
+  "episodes": [
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 247
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 403
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 338
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 317
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 332
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 360
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 290
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 317
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 223
+    },
+    {
+      "taskType": "comparison",
+      "route": "LEAN_RAG",
+      "passed": false,
+      "repaired": false,
+      "generationTokens": 394
+    },
+    {
+      "taskType": "explanation",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 451
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 366
+    },
+    {
+      "taskType": "comparison",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 363
+    },
+    {
+      "taskType": "comparison",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 452
+    },
+    {
+      "taskType": "comparison",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 236
+    },
+    {
+      "taskType": "explanation",
+      "route": "LEAN_RAG",
+      "passed": false,
+      "repaired": false,
+      "generationTokens": 383
+    },
+    {
+      "taskType": "explanation",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 352
+    },
+    {
+      "taskType": "explanation",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 332
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": false,
+      "repaired": false,
+      "generationTokens": 199
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 307
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 556
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 691
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 724
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 696
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 789
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 717
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 769
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 879
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 769
+    },
+    {
+      "taskType": "comparison",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 801
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 791
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 688
+    },
+    {
+      "taskType": "comparison",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 707
+    },
+    {
+      "taskType": "comparison",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 996
+    },
+    {
+      "taskType": "comparison",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 709
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 730
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 790
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 775
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 706
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 710
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 247
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 408
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 734
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 702
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 788
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 360
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 290
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 966
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 761
+    },
+    {
+      "taskType": "comparison",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 796
+    },
+    {
+      "taskType": "explanation",
+      "route": "AUTO_CODE",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 867
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 368
+    },
+    {
+      "taskType": "comparison",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 707
+    },
+    {
+      "taskType": "comparison",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 1033
+    },
+    {
+      "taskType": "comparison",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 228
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 768
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 801
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 758
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 724
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 308
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 253
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 411
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 324
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 702
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 785
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 360
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 331
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 903
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 779
+    },
+    {
+      "taskType": "comparison",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 790
+    },
+    {
+      "taskType": "explanation",
+      "route": "AUTO_CODE",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 820
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 366
+    },
+    {
+      "taskType": "comparison",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 707
+    },
+    {
+      "taskType": "comparison",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 1059
+    },
+    {
+      "taskType": "comparison",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 230
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 737
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 961
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 766
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 710
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 308
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 250
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 409
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 709
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 696
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 788
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 360
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 284
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 867
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 769
+    },
+    {
+      "taskType": "comparison",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 791
+    },
+    {
+      "taskType": "explanation",
+      "route": "AUTO_CODE",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 816
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 364
+    },
+    {
+      "taskType": "comparison",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 792
+    },
+    {
+      "taskType": "comparison",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 1052
+    },
+    {
+      "taskType": "comparison",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 230
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 710
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 942
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 786
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 706
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 310
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 219
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 402
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 709
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 696
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 794
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 360
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 284
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 886
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 779
+    },
+    {
+      "taskType": "comparison",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 790
+    },
+    {
+      "taskType": "explanation",
+      "route": "AUTO_CODE",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 819
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 367
+    },
+    {
+      "taskType": "comparison",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 707
+    },
+    {
+      "taskType": "comparison",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 1065
+    },
+    {
+      "taskType": "comparison",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 236
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 746
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 918
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 765
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 707
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 306
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 203
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 230
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 717
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 696
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 780
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 187
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 265
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 838
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 779
+    },
+    {
+      "taskType": "comparison",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 787
+    },
+    {
+      "taskType": "explanation",
+      "route": "AUTO_CODE",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 862
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 196
+    },
+    {
+      "taskType": "comparison",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 740
+    },
+    {
+      "taskType": "comparison",
+      "route": "STRONG_RAG",
+      "passed": false,
+      "repaired": false,
+      "generationTokens": 1065
+    },
+    {
+      "taskType": "comparison",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 208
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 720
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 802
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 768
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 703
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 203
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 310
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 312
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 710
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 594
+    },
+    {
+      "taskType": "comparison",
+      "route": "LEAN_RAG",
+      "passed": false,
+      "repaired": false,
+      "generationTokens": 215
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 743
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 749
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 716
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 287
+    },
+    {
+      "taskType": "lookup",
+      "route": "LEAN_RAG",
+      "passed": false,
+      "repaired": false,
+      "generationTokens": 132
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 709
+    },
+    {
+      "taskType": "lookup",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 602
+    },
+    {
+      "taskType": "comparison",
+      "route": "LEAN_RAG",
+      "passed": false,
+      "repaired": false,
+      "generationTokens": 237
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 756
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 765
+    },
+    {
+      "taskType": "explanation",
+      "route": "STRONG_RAG",
+      "passed": true,
+      "repaired": false,
+      "generationTokens": 724
+    }
+  ]
+}

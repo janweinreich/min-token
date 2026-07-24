@@ -174,6 +174,30 @@ const skill = synthesizeRoutingSkill({
   qualityFloor: 0.9,
   generatedAt: new Date(1784_920_000_000).toISOString(),
 });
+// Persist the measured episodes so the live app seeds from evidence rather than
+// starting blind. Written from an actual run, never hand-authored — a constant
+// typed in by hand is exactly how a benchmark number becomes a lie.
+await mkdir("artifacts", { recursive: true });
+await writeFile(
+  "artifacts/episodes.json",
+  JSON.stringify(
+    {
+      measuredAt: new Date(1784_920_000_000).toISOString(),
+      source: "bootstrap probe over data/benchmarks/dev.jsonl, both routes forced",
+      provider: "pioneer",
+      episodes: collected.map((e) => ({
+        taskType: e.taskType,
+        route: e.route,
+        passed: e.passed,
+        repaired: e.repaired,
+        generationTokens: e.generationTokens,
+      })),
+    },
+    null,
+    2,
+  ) + "\n",
+);
+
 await mkdir("skills/routing", { recursive: true });
 await writeFile("skills/routing/SKILL.md", skill + "\n", "utf8");
 
