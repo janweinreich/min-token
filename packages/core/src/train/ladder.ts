@@ -36,7 +36,13 @@ export const REFERENCE_MODEL = "claude-sonnet-5";
  *
  * Given 300 tokens of headroom it emits valid JSON in ~37 output tokens.
  *
- *   deepseek-v4-flash  still 500s from Pioneer (the id resolves; the call fails)
+ *   deepseek-v4-flash  still 500s from Pioneer. Not our bug and not a model
+ *                      problem: DeepSeek-V4-Pro answers fine on the same call
+ *                      shape, so Pioneer's Flash deployment is what is broken.
+ *                      It would also not be the cheap option here — for a
+ *                      router's ~590-in/37-out shape it costs about $0.000093
+ *                      against gpt-5-nano's $0.000044, because Flash is 3x the
+ *                      input price and input dominates a routing decision.
  *   gpt-oss-20b        errors on the Messages surface
  *   claude-haiku-4-5   works, and is 20x the price of nano
  *   gpt-5-nano         works with headroom — $0.05/$0.40 vs haiku's $1/$5

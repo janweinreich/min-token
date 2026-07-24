@@ -1,6 +1,6 @@
 # Routing Skill v1
 
-> Generated 2026-07-24T22:50:57.345Z from policy v1. **Do not edit by hand** — this file is recompiled on every policy promotion, and every rule below is derived from a policy parameter or from measured routing episodes.
+> Generated 2026-07-24T23:01:13.445Z from policy v1. **Do not edit by hand** — this file is recompiled on every policy promotion, and every rule below is derived from a policy parameter or from measured routing episodes.
 
 ## Goal
 
@@ -22,9 +22,10 @@ Chunks are truncated to 1200 characters. This is the highest-leverage number her
 
 | task class | n | lean tried | clean wins | success (lower bound) | mean tokens lean → strong | routing |
 |---|---:|---:|---:|---:|---:|---|
-| comparison | 30 | 11 | 8 | 0.44 | 275 → 847 | **skip lean** — go straight to strong |
-| explanation | 34 | 4 | 3 | 0.29 | 380 → 779 | **skip lean** — go straight to strong |
-| lookup | 92 | 47 | 45 | 0.85 | 304 → 744 | **use lean** |
+| comparison | 31 | 11 | 8 | 0.44 | 275 → 852 | **skip lean** — go straight to strong |
+| explanation | 35 | 4 | 3 | 0.29 | 380 → 786 | **skip lean** — go straight to strong |
+| lookup | 94 | 49 | 45 | 0.81 | 317 → 744 | **use lean** |
+| unknown | 1 | 0 | 0 | 0.00 | – → 752 | _gathering evidence_ |
 
 Routing **comparison, explanation** straight to the strong model avoids the retry tax: a lean attempt that fails and escalates costs more than starting strong, because the repair reuses the larger context.
 
@@ -36,8 +37,8 @@ Learned by having **claude-sonnet-5** answer each question, having every cheaper
 |---|---:|---|---:|---:|
 | comparison | 4 | `claude-haiku-4-5` | 100% | 53% |
 | explanation | 1 | `claude-sonnet-5` _(too few examples — held at the reference)_ | 100% | 0% |
-| lookup | 6 | `gpt-5-nano` | 83% | 97% |
-| unknown | 4 | `claude-haiku-4-5` | 100% | 58% |
+| lookup | 9 | `gpt-5-nano` | 89% | 97% |
+| unknown | 5 | `claude-haiku-4-5` | 100% | 58% |
 
 A model is only recommended for a class when it was accepted on a **majority** of that class. Cheapest-ever-accepted would overfit to one lucky question and route the whole class to a model that usually fails.
 

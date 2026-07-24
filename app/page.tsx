@@ -356,65 +356,35 @@ export default function Page() {
 
           {routerMode !== "train" && (
           <>
-          <h2>This request</h2>
+          <h2>Saved on this request</h2>
           {sv ? (
             <>
-              <div className="bigrow">
-                <div className="big">
-                  <span className="n">{sv.tokensUsed}</span>
-                  <span className="l">tokens used</span>
+              <div className={sv.tokensSaved > 0 ? "headline" : "headline none"}>
+                <div className="hn">{sv.tokensSaved}</div>
+                <div className="hl">
+                  tokens saved · <b>{usd(sv.usdSaved)}</b>
+                  <span>
+                    {sv.tokensUsed} used instead of {sv.tokensBaseline} on {sv.baselineModel}
+                  </span>
                 </div>
-                <div className="vs">vs</div>
-                <div className="big muted">
-                  <span className="n">{sv.tokensBaseline}</span>
-                  <span className="l">if always {sv.baselineModel}</span>
-                </div>
+                <div className="hp">{sv.pct}%</div>
               </div>
-
-              <div className={sv.tokensSaved > 0 ? "saveband" : "saveband none"}>
-                {sv.tokensSaved > 0 ? (
-                  <>
-                    saved <b>{sv.tokensSaved} tokens</b> and <b>{usd(sv.usdSaved)}</b>
-                    <span className="pct">{sv.pct}%</span>
-                  </>
-                ) : (
-                  <>no saving here — this one needed the stronger model</>
-                )}
-              </div>
-
-              <div className="costrow">
-                <span>cost <b>{usd(sv.usdUsed)}</b></span>
-                <span className="dim">baseline {usd(sv.usdBaseline)}</span>
-              </div>
-
               {last!.usage.routerTokens > 0 && (
-                <div className="warn tiny">
+                <p className="warn tiny">
                   includes {last!.usage.routerTokens} tokens the router spent deciding — counted, not hidden
-                </div>
+                </p>
               )}
-              <p className="basis">
-                Baseline = the measured {last!.measured.strongTokensPerCase}-token always-strong average over{" "}
-                {last!.measured.cases} benchmark cases at Pioneer&apos;s published rate. An estimate; the hard
-                number is under &ldquo;evidence&rdquo;.
+              <p className="sessline">
+                session: <b>{last!.session.asks}</b> asks · <b>{last!.session.replays}</b> free replays ·{" "}
+                <b className="good">{last!.session.avoidedEst}</b> tokens and{" "}
+                <b className="good">{usd(last!.session.avoidedUsdEst ?? 0)}</b> avoided
               </p>
             </>
           ) : (
             <p className="dim">Ask something to see the comparison.</p>
           )}
 
-          <h2>This session</h2>
-          {view?.session ? (
-            <div className="sess">
-              <div><span className="n">{view.session.asks}</span><span className="l">asks</span></div>
-              <div><span className="n">{view.session.replays}</span><span className="l">replayed free</span></div>
-              <div><span className="n good">{view.session.avoidedEst}</span><span className="l">tokens avoided</span></div>
-              <div><span className="n good">{usd(view.session.avoidedUsdEst ?? 0)}</span><span className="l">saved</span></div>
-            </div>
-          ) : (
-            <p className="dim">—</p>
-          )}
-
-          <h2>How it saved</h2>
+          <h2>Why it was cheap</h2>
           {last ? (
             <ul className="how">
               <li>
@@ -447,18 +417,12 @@ export default function Page() {
                   <span className="dim">{last.selectedModelId ?? "no model call"} — keyword router, free</span>
                 )}
               </li>
-              <li>
-                <b>sponsors</b>{" "}
-                <span className="dim">
-                  {last.tools.filter((t) => t.live).map((t) => t.sponsor).join(", ") || "none live"}
-                </span>
-              </li>
             </ul>
           ) : (
             <p className="dim">—</p>
           )}
 
-          <h2>How it got here</h2>
+          <h2>What it has learned</h2>
           {status?.learningLog?.length ? (
             <ol className="timeline">
               {status.learningLog.map((e, i) => (
@@ -493,6 +457,13 @@ export default function Page() {
 
           {showDetail && (
             <div className="detail">
+              <h3>Baseline</h3>
+              <p className="tiny dim">
+                The comparison number is the measured 765-token always-strong average over 20 benchmark
+                cases at Pioneer&apos;s published claude-sonnet-5 rate. An estimate; the hard number is
+                directly below.
+              </p>
+
               <h3>Measured benchmark</h3>
               {view?.measured && (
                 <p className="tiny">

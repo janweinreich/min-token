@@ -87,12 +87,33 @@ export async function routeWithLlm(
   const rung = LADDER.find((r) => r.id === ROUTER_MODEL);
   try {
     const system = synthesizedPrompt?.trim() || buildRouterPrompt(rules);
-    const r = await call(ROUTER_MODEL, system, question, ROUTER_MAX_TOKENS);
-    // Strip a markdown fence first — haiku reliably wraps JSON in ```json.
-    const cleaned = r.text.replace(/```(?:json)?/gi, "");
-    const m = /\{[\s\S]*?\}/.exec(cleaned);
-    const parsed = m ? (JSON.parse(m[0]) as { model?: unknown; why?: unknown }) : null;
-    const picked = typeof parsed?.model === "string" ? parsed.model.trim() : "";
+
+    // Retry an UNUSABLE-but-successful response, not only a thrown one.
+    // Measured: gpt-5-nano intermittently returns a 200 with an empty text
+    // block. That does not throw, so a throw-only retry never fires and the
+    // request silently degrades to the fallback model — which looks like the
+    // router made a worse choice rather than like it never answered.
+    let r = { text: "", inputTokens: 0, outputTokens: 0 };
+    let picked = "";
+    let parsed: { model?: unknown; why?: unknown } | null = null;
+    for (let attempt = 0; attempt < 2 && !picked; attempt++) {
+      const got = await call(ROUTER_MODEL, system, question, ROUTER_MAX_TOKENS);
+      // Tokens from a failed attempt still count — we were billed for them.
+      r = {
+        text: got.text,
+        inputTokens: r.inputTokens + got.inputTokens,
+        outputTokens: r.outputTokens + got.outputTokens,
+      };
+      // Strip a markdown fence first — some models wrap JSON in ```json.
+      const cleaned = got.text.replace(/```(?:json)?/gi, "");
+      const m = /\{[\s\S]*?\}/.exec(cleaned);
+      try {
+        parsed = m ? (JSON.parse(m[0]) as { model?: unknown; why?: unknown }) : null;
+      } catch {
+        parsed = null;
+      }
+      picked = typeof parsed?.model === "string" ? parsed.model.trim() : "";
+    }
 
     // Bounded to the ladder. A router that can name any string is a router that
     // can be talked into naming an expensive one — or a nonexistent one.
@@ -105,7 +126,9 @@ export async function routeWithLlm(
         ? typeof parsed?.why === "string"
           ? parsed.why.slice(0, 60)
           : "chosen by router"
-        : `router returned "${picked.slice(0, 24)}" which is not on the ladder`,
+        : picked
+          ? `router returned "${picked.slice(0, 24)}" which is not on the ladder`
+          : "router returned nothing usable twice",
       source: valid ? "llm" : "fallback",
       promptSource: synthesizedPrompt?.trim() ? "synthesized" : "builtin",
       inputTokens: r.inputTokens,
