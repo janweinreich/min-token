@@ -56,7 +56,13 @@ warm  (3/4 replayed)  :  393 tokens   -> 71.1% saved
 
 **Replay safety** — 20 probes, 7 that must replay and 13 that must not: **20/20 correct**, Wilson 95% lower bound **0.839**. That bound is the ceiling for 20 probes; supporting a ≥0.95 claim needs roughly 80. We report the bound, not the point estimate.
 
-**Training mode: the router that did not pay for itself.** A strong model judges which cheaper model would have sufficed, and the accepted labels are distilled into per-class rules. Serving those rules two ways, over 8 questions against an always-haiku baseline:
+**Training mode — the loop.** A strong reference model answers each question; every cheaper rung answers it too; the reference judges each cheap answer on its own merits; the cheapest accepted rung is recorded. Those `(question, class, cheapest model that held up, why)` pairs are then handed *back* to the reference model, which **writes the router's system prompt itself** (`artifacts/router-prompt.md`). At prediction time a cheap model reads that prompt and names the model — no expensive model in the serving path.
+
+The prompt is a learned artifact, and it shows: from the judged pairs the reference model discovered a failure mode nobody encoded — *"gpt-5-nano frequently produces empty answers, refusals on benign topics, or fabricates specific technical details when it doesn't know an internal system's behavior"* — and wrote a rule against routing proprietary how/why questions to it.
+
+The output contract is appended rather than left to the model: asked to include it verbatim, the reference produced it on one run and paraphrased it on the next, which failed validation and silently discarded the whole prompt. The model decides how to route; it does not get a vote on the wire format the parser depends on.
+
+**The router that did not pay for itself.** Serving the rules two ways, over 8 questions against an always-haiku baseline:
 
 | how the rules are used | router tokens | net vs baseline |
 |---|---:|---:|
@@ -115,7 +121,7 @@ packages/core/src/
 | `pnpm calibrate` | no | the cosine measurement the whole design rests on |
 | `pnpm savings` | yes | cold-vs-warm token savings, with a safety control |
 | `pnpm evolve` | yes | full evolution cycle, regenerates the skill |
-| `pnpm train` | yes | judge-labelled distillation into `artifacts/routing-rules.json` |
+| `pnpm train` | yes | judge-labelled distillation → rules **and** a model-written router prompt |
 | `pnpm router-overhead` | yes | does the LLM router pay for itself? (measured: no) |
 
 ## Stack

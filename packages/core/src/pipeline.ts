@@ -103,7 +103,7 @@ export interface AskResponse {
   routing?: RouteDecision;
   /** Present when the distilled LLM router chose the model. */
   llmRouting?: {
-    model: string; reason: string; source: string;
+    model: string; reason: string; source: string; promptSource?: string;
     inputTokens: number; outputTokens: number; costUsd: number; latencyMs: number;
   };
   latencyMs: number;
@@ -131,6 +131,7 @@ export interface PipelineDeps {
    */
   llmRouter?: (question: string, fallbackModel: string) => Promise<{
     model: string; reason: string; source: "llm" | "learned" | "fallback";
+    promptSource?: "synthesized" | "builtin";
     inputTokens: number; outputTokens: number; costUsd: number; latencyMs: number;
   }>;
   /**

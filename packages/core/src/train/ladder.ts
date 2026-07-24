@@ -26,19 +26,32 @@ export const REFERENCE_MODEL = "claude-sonnet-5";
 /**
  * The model that READS the skill and routes at serve time.
  *
- * Measured, because the obvious cheap choices do not work as routers:
- *   deepseek-v4-flash  500s from Pioneer on both compatible surfaces
- *   gpt-5-nano         consumed 384 output tokens and emitted an EMPTY string
- *                      (stop_reason max_tokens) — it is a reasoning model that
- *                      spends its whole budget thinking, so it can answer
- *                      cheaply but cannot be relied on to emit a routing verdict
- *   gpt-oss-20b        errored on the Messages surface
- *   claude-haiku-4-5   works: ~29 output tokens, valid JSON
+ * Measured, and the first measurement was WRONG in an instructive way.
  *
- * So the router is the cheapest rung that reliably EMITS, not the cheapest rung.
- * Override with ROUTER_MODEL once a cheaper one behaves.
+ * gpt-5-nano was originally ruled out: at max_tokens 60 it burned its whole
+ * budget and returned an EMPTY string with stop_reason max_tokens, which read as
+ * "this model cannot emit a verdict". It was actually "this model was cut off
+ * mid-thought". Truncation and refusal are indistinguishable from the outside —
+ * both are an empty body — and that ambiguity cost a 20x cheaper router.
+ *
+ * Given 300 tokens of headroom it emits valid JSON in ~37 output tokens.
+ *
+ *   deepseek-v4-flash  still 500s from Pioneer (the id resolves; the call fails)
+ *   gpt-oss-20b        errors on the Messages surface
+ *   claude-haiku-4-5   works, and is 20x the price of nano
+ *   gpt-5-nano         works with headroom — $0.05/$0.40 vs haiku's $1/$5
+ *
+ * Override with ROUTER_MODEL. Any replacement must be given ROUTER_MAX_TOKENS
+ * of room, or it will look broken when it is merely truncated.
  */
-export const ROUTER_MODEL = process.env.ROUTER_MODEL ?? "claude-haiku-4-5";
+export const ROUTER_MODEL = process.env.ROUTER_MODEL ?? "gpt-5-nano";
+
+/**
+ * Headroom for the routing verdict. NOT a cost lever — a reasoning model that
+ * hits this cap returns nothing at all, so trimming it does not save tokens, it
+ * discards the request. Only ~37 of these are typically billed.
+ */
+export const ROUTER_MAX_TOKENS = Number(process.env.ROUTER_MAX_TOKENS ?? 300);
 
 export function costUsd(rung: Rung, inTok: number, outTok: number): number {
   return (inTok * rung.inUsd + outTok * rung.outUsd) / 1_000_000;

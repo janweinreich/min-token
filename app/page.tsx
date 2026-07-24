@@ -14,11 +14,12 @@ interface Res {
   memory: { hit: boolean; kind?: string; similarity?: number; rejections: Rejection[] };
   routing?: { reasons: string[]; leanSuccessLCB: number; contextK: number; evidenceCoverage: number };
   llmRouting?: {
-    model: string; reason: string; source: string;
+    model: string; reason: string; source: string; promptSource?: string;
     inputTokens: number; outputTokens: number; costUsd: number; latencyMs: number;
   };
   routerModel?: string;
   distilledRulesAvailable?: number;
+  routerPromptSynthesized?: boolean;
   citations: { sourceId: string }[];
   strongEstimate: number;
   session: { asks: number; spent: number; avoidedEst: number; replays: number };
@@ -166,12 +167,12 @@ export default function Page() {
                 onClick={() => setRouterMode(mo)}
                 disabled={busy}
               >
-                {mo === "off" ? "off" : mo === "learned" ? "apply learned rules · 0 tok" : `${view?.routerModel ?? "cheap model"} reads the skill · ~470 tok`}
+                {mo === "off" ? "off" : mo === "learned" ? "apply learned rules · 0 tok" : `${view?.routerModel ?? "cheap model"} reads the learned prompt · ~625 tok`}
               </button>
             ))}
             <span className="tiny">
               {view?.distilledRulesAvailable
-                ? `${view.distilledRulesAvailable} distilled rules learned · measured: paying a model to read them lost 4,404 tokens over 8 questions, so applying them as a lookup is the default`
+                ? `${view.distilledRulesAvailable} distilled rules${view.routerPromptSynthesized ? ", and the router's own prompt was written by claude-sonnet-5 from the judged pairs" : ""} · the lookup is the default because paying a model to read the rules cost 4,404 tokens more than it saved over 8 questions`
                 : "run `pnpm train` first — no distilled rules yet"}
             </span>
           </div>
@@ -235,7 +236,9 @@ export default function Page() {
                           </>
                         ) : last.llmRouting.source === "llm" ? (
                           <>
-                            <b>{last.routerModel}</b> read the learned skill and picked{" "}
+                            <b>{last.routerModel}</b> read the{" "}
+                            {last.llmRouting.promptSource === "synthesized" ? "model-written" : "built-in"}{" "}
+                            routing prompt and picked{" "}
                             <b>{last.llmRouting.model}</b> — &ldquo;{last.llmRouting.reason}&rdquo;
                             <span className="tiny"> · router cost ${last.llmRouting.costUsd.toFixed(5)}</span>
                           </>

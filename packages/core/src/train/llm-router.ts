@@ -16,12 +16,14 @@
  * The deterministic router costs ZERO, so this is an addition, not a replacement.
  * Its value is generalising to questions the keyword classifier has no class for.
  */
-import { LADDER, ROUTER_MODEL } from "./ladder.js";
+import { LADDER, ROUTER_MAX_TOKENS, ROUTER_MODEL } from "./ladder.js";
 import type { ClassRule } from "./distil.js";
 
 export interface RouterDecision {
   model: string;
   reason: string;
+  /** Whether the prompt driving this decision was model-written or built in. */
+  promptSource?: "synthesized" | "builtin";
   /** How the choice was reached. `fallback` means the LLM did not give a usable answer. */
   source: "llm" | "fallback";
   inputTokens: number;
@@ -74,11 +76,18 @@ export async function routeWithLlm(
   rules: ClassRule[],
   call: RouterCall,
   fallbackModel: string,
+  /**
+   * The prompt the REFERENCE MODEL wrote from the training pairs. When absent
+   * we fall back to the built-in template, so the router works before training
+   * has ever run.
+   */
+  synthesizedPrompt?: string,
 ): Promise<RouterDecision> {
   const t0 = Date.now();
   const rung = LADDER.find((r) => r.id === ROUTER_MODEL);
   try {
-    const r = await call(ROUTER_MODEL, buildRouterPrompt(rules), question, 60);
+    const system = synthesizedPrompt?.trim() || buildRouterPrompt(rules);
+    const r = await call(ROUTER_MODEL, system, question, ROUTER_MAX_TOKENS);
     // Strip a markdown fence first — haiku reliably wraps JSON in ```json.
     const cleaned = r.text.replace(/```(?:json)?/gi, "");
     const m = /\{[\s\S]*?\}/.exec(cleaned);
@@ -98,6 +107,7 @@ export async function routeWithLlm(
           : "chosen by router"
         : `router returned "${picked.slice(0, 24)}" which is not on the ladder`,
       source: valid ? "llm" : "fallback",
+      promptSource: synthesizedPrompt?.trim() ? "synthesized" : "builtin",
       inputTokens: r.inputTokens,
       outputTokens: r.outputTokens,
       costUsd: cost,

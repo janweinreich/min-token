@@ -245,6 +245,18 @@ async function approve(a: Agent, question: string, answer: string) {
   ]);
 }
 
+/** The router prompt the reference model wrote. Absent until `pnpm train` runs. */
+let cachedPrompt: string | null | undefined;
+async function synthesizedPrompt(): Promise<string | null> {
+  if (cachedPrompt !== undefined) return cachedPrompt;
+  try {
+    cachedPrompt = (await readFile("artifacts/router-prompt.md", "utf8")).trim() || null;
+  } catch {
+    cachedPrompt = null;
+  }
+  return cachedPrompt;
+}
+
 /** Distilled rules, loaded once. Absent until `pnpm train` has been run. */
 let cachedRules: ClassRule[] | null | undefined;
 async function distilledRules(): Promise<ClassRule[] | null> {
@@ -301,6 +313,7 @@ export async function status() {
   const rules = await distilledRules();
   return {
     distilledRulesAvailable: rules?.length ?? 0,
+    routerPromptSynthesized: (await synthesizedPrompt()) !== null,
     routerModel: ROUTER_MODEL,
     episodeCount: a.episodes.length,
     seededEpisodes: a.seeded,
@@ -315,10 +328,12 @@ export async function handle(question: string, autoApprove: boolean, mode: Route
   await a.ready;
 
   const rules = mode === "off" ? null : await distilledRules();
+  const prompt = mode === "llm" ? await synthesizedPrompt() : null;
   const llmRouter =
     rules && rules.length
       ? mode === "llm"
-        ? (q: string, fallback: string) => routeWithLlm(q, rules, routerCall, fallback)
+        ? (q: string, fallback: string) =>
+            routeWithLlm(q, rules, routerCall, fallback, prompt ?? undefined)
         : (q: string, fallback: string) => {
             const r = applyRules(classifyTask(q), rules, fallback);
             return Promise.resolve({
@@ -416,6 +431,7 @@ export async function handle(question: string, autoApprove: boolean, mode: Route
     policyVersion: 1,
     routerModel: ROUTER_MODEL,
     distilledRulesAvailable: (await distilledRules())?.length ?? 0,
+    routerPromptSynthesized: (await synthesizedPrompt()) !== null,
     episodeCount: a.episodes.length,
     seededEpisodes: a.seeded,
   };

@@ -1,7 +1,7 @@
 {
-  "measuredAt": "2026-07-24T21:34:48.796Z",
+  "measuredAt": "2026-07-24T22:24:57.820Z",
   "referenceModel": "claude-sonnet-5",
-  "routerModel": "gpt-5-nano",
+  "routerModel": "claude-haiku-4-5",
   "rules": [
     {
       "taskType": "comparison",
@@ -32,7 +32,7 @@
       "recommended": "gpt-5-nano",
       "support": 0.75,
       "confident": true,
-      "meanSavingPct": 89.72462536058657,
+      "meanSavingPct": 97.69993251548901,
       "examples": [
         "What package installs the Actian JavaScript SDK?",
         "Which port does the Actian VectorAI gRPC endpoint listen on?"
@@ -44,7 +44,7 @@
       "recommended": "claude-haiku-4-5",
       "support": 1,
       "confident": true,
-      "meanSavingPct": 57.90787490592398,
+      "meanSavingPct": 61.681330859561555,
       "examples": [
         "Why does Guild require a public HTTPS tunnel for local development?",
         "Give me a recipe for apple pie"

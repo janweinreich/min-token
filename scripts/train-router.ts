@@ -13,6 +13,8 @@ import { synthesizeRoutingSkill, type EpisodeRecord } from "../packages/core/src
 import { DEFAULT_POLICY } from "../packages/core/src/policy.js";
 import { LADDER, REFERENCE_MODEL, ROUTER_MODEL } from "../packages/core/src/train/ladder.js";
 import { aggregate, distilOne, type TrainingExample, type TrainingQuestion } from "../packages/core/src/train/distil.js";
+import { synthesizeRouterPrompt } from "../packages/core/src/train/synthesize-prompt.js";
+import { buildRouterPrompt } from "../packages/core/src/train/llm-router.js";
 import { LocalContextProvider } from "../packages/core/src/adapters/local-context.js";
 import { miniLmEmbedder } from "../packages/core/src/embeddings/minilm.js";
 import { classifyTask } from "../packages/core/src/features.js";
@@ -129,6 +131,17 @@ await writeFile(
 );
 
 // ── Append the prescriptive table to the skill ───────────────────────────────
+// ── Step 5: the reference model writes the router's prompt from the pairs ──
+//
+// The pairs are (question, class, which cheap model the judge accepted, why).
+// Handing them to the reference model and asking it to write the routing prompt
+// is what makes the prompt a LEARNED artifact instead of a fixed template: new
+// traffic can change how the router reasons, not just the numbers it reads.
+console.log("\nsynthesizing the router prompt from the training pairs...");
+const synth = await synthesizeRouterPrompt(examples, callByModel, REFERENCE_MODEL, buildRouterPrompt(rules));
+await writeFile("artifacts/router-prompt.md", synth.prompt + "\n", "utf8");
+console.log(`  ${synth.source} (${synth.reason}) -> artifacts/router-prompt.md`);
+
 const skillPath = "skills/routing/SKILL.md";
 
 // The skill has exactly ONE writer: synthesizeRoutingSkill. This script used to
@@ -136,11 +149,13 @@ const skillPath = "skills/routing/SKILL.md";
 // deleted it — and, once the synthesizer learned to render the table itself, an
 // append here would have truncated the non-negotiable rules that follow it.
 // Two writers and a marker-based splice is how a file quietly loses sections.
-const episodes: EpisodeRecord[] = JSON.parse(
-  await readFile("artifacts/episodes.json", "utf8"),
-).map((e: Record<string, unknown>) => ({
+const episodes: EpisodeRecord[] = (
+  (JSON.parse(await readFile("artifacts/episodes.json", "utf8")) as {
+    episodes?: Array<Record<string, unknown>>;
+  }).episodes ?? []
+).map((e) => ({
   similarity: Number(e.similarity ?? 0),
-  route: String(e.route),
+  route: e.route as EpisodeRecord["route"],
   passed: Boolean(e.passed),
   repaired: Boolean(e.repaired),
   taskType: String(e.taskType ?? "unknown"),
