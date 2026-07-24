@@ -17,7 +17,11 @@ interface Res {
   strongEstimate: number;
   session: { asks: number; spent: number; avoidedEst: number; replays: number };
   learned: Learned[];
-  measured: Record<string, number>;
+  measured: {
+    routerQuality: number; strongQuality: number; leanQuality: number;
+    routerTokens: number; strongTokens: number; leanTokens: number;
+    leanTokensPerCase: number; strongTokensPerCase: number; cases: number;
+  };
   episodeCount: number;
   error?: string;
 }

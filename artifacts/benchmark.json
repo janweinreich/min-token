@@ -1,0 +1,18 @@
+{
+  "measuredAt": "2026-07-24",
+  "provider": "pioneer",
+  "usageSource": "provider",
+  "devCases": 20,
+  "holdoutCases": 8,
+  "arms": {
+    "leanOnly":   { "quality": 0.911, "generationTokens": 6619 },
+    "strongOnly": { "quality": 0.937, "generationTokens": 15291 },
+    "router":     { "quality": 0.947, "generationTokens": 12501 }
+  },
+  "tokenReductionVsStrongOnly": 0.182,
+  "criticalFailures": 0,
+  "evolution": {
+    "promoted": 0,
+    "note": "Candidates won on dev and were rejected by the holdout twice. leanContextK 2->1 scored the best dev quality of any candidate with 5% fewer tokens, then failed holdout on overall quality 0.800 vs the 0.900 floor, one critical failure, and a single case at 0.250."
+  }
+}
