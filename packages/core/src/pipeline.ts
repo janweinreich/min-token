@@ -55,6 +55,12 @@ export interface Usage {
   totalGenerationTokens: number;
   usageSource: "provider" | "estimated" | "none";
   localEmbeddingCalls: number;
+  /**
+   * Cost from the ROUTED model's published rate. This is the number the goal is
+   * actually about, and it moves further than tokens do: the cheap route is both
+   * fewer tokens AND a cheaper rate, so dollar savings exceed token savings.
+   */
+  estimatedCostUsd: number;
 }
 
 export interface MemoryDecision {
@@ -131,6 +137,7 @@ const ZERO_USAGE = (embeds: number): Usage => ({
   // Not "free": zero GENERATION tokens, at a real local compute cost we report.
   usageSource: "none",
   localEmbeddingCalls: embeds,
+  estimatedCostUsd: 0,
 });
 
 function usageFrom(r: GenerateResult, embeds: number): Usage {
@@ -143,6 +150,7 @@ function usageFrom(r: GenerateResult, embeds: number): Usage {
       r.inputTokens + r.outputTokens + r.cacheReadTokens + r.cacheWriteTokens,
     usageSource: r.usageSource,
     localEmbeddingCalls: embeds,
+    estimatedCostUsd: r.estimatedCostUsd ?? 0,
   };
 }
 
