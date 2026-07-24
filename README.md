@@ -88,45 +88,58 @@ replay safety set passed 20 of 20 probes; its Wilson 95% lower bound is 0.839.
 ### Pioneer
 
 Pioneer serves the models used for live answers and exposes the model and usage
-data that mintoken records for each request. mintoken also calls Pioneer during
-training to compare cheaper models against `claude-sonnet-5`, allowing the
-system to move large volumes of suitable requests away from the reference
-model instead of paying its rate by default.
+data that mintoken records for each request. mintoken also uses Pioneer as the
+training arena where cheaper models compete against `claude-sonnet-5`, turning
+Pioneer from a single inference endpoint into the engine behind the entire
+routing strategy. This integration produced the project's central result: the
+measured router beat both fixed model strategies on quality while using 18.2%
+fewer tokens than always strong.
 
 ### Senso
 
 The Darwin evolution loop calls Senso's `/org/search/context` endpoint and puts
 the returned source chunks into the generation prompt. Those chunks are also
 used when scoring whether a cheaper policy remains above the configured quality
-floor, preventing a cost reduction from being accepted solely because it used
-fewer tokens. The current Hugging Face chat path uses the BudgetDarwin local
-context provider; the Senso adapter remains available in `src/adapters/senso.ts`
-for the batch evolution path.
+floor, making Senso the evidence barrier every aggressive cost reduction must
+clear before it can be treated as an improvement. Without that check, mintoken
+could minimize cost by returning weak answers; with it, savings only count when
+the answer remains grounded. The current Hugging Face chat path uses the
+BudgetDarwin local context provider, while the Senso adapter remains available
+in `src/adapters/senso.ts` for the batch evolution path.
 
 ### Guild
 
 After a Darwin challenger batch, mintoken sends its baseline cost, challenger
 cost, challenger quality, minimum quality, and maximum cost ratio into a Guild
 agent-test session. A challenger is promoted only when it meets both thresholds,
-so a large apparent saving cannot replace the active policy if quality falls
-below the floor. The Guild step is implemented in the batch evolution path and
-is not called by each Hugging Face chat request.
+so Guild has final control over whether an optimization is allowed to become the
+active policy. This gate has enough authority to reject a candidate even after
+it wins on development data, preventing one bad holdout result from turning a
+promising cost reduction into a production regression. The Guild step is
+implemented in the batch evolution path and is not called by each Hugging Face
+chat request.
 
 ### Band
 
 When Guild promotes a Darwin policy, mintoken posts the policy version, quality,
 batch cost, and savings percentage to a Band operations chat. If no chat exists,
 the adapter can create `mintoken ops`; if Band is unavailable, it records the
-same message as a cached application event. Band is only called after a
-promotion, not for normal questions or rejected challengers.
+same message as a cached application event. Band turns a backend routing change
+into an immediate operational record, so a major reduction in AI spend is
+visible with its supporting quality and cost numbers instead of disappearing
+inside application logs. Band is only called after a promotion, not for normal
+questions or rejected challengers.
 
 ### Replay
 
 The UI includes a Replay LoopQA action for recording that the deployed public
 experience was tested. Separately, mintoken's replay guard decides whether a
 stored answer can safely replace a new Pioneer call; accepted matches reduce
-that request to zero generation tokens. The safety benchmark includes both
-paraphrases that must replay and near-matches that must be rejected.
+that request to zero generation tokens, completely removing model inference
+from work the system has already solved. In the measured warm run, replay cut
+token use by 71.1%, making it the highest-impact route in the application while
+the safety benchmark ensures similar-looking but different questions are still
+rejected.
 
 ## API routes
 
