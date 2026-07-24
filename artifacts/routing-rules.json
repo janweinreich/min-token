@@ -1,0 +1,54 @@
+{
+  "measuredAt": "2026-07-24T21:34:48.796Z",
+  "referenceModel": "claude-sonnet-5",
+  "routerModel": "gpt-5-nano",
+  "rules": [
+    {
+      "taskType": "comparison",
+      "n": 2,
+      "recommended": "claude-sonnet-5",
+      "support": 1,
+      "confident": false,
+      "meanSavingPct": 0,
+      "examples": [
+        "What is the difference between a Guild coded agent and an LLM agent?",
+        "Explain the tradeoffs between microservices and a monolith"
+      ]
+    },
+    {
+      "taskType": "explanation",
+      "n": 1,
+      "recommended": "claude-sonnet-5",
+      "support": 1,
+      "confident": false,
+      "meanSavingPct": 0,
+      "examples": [
+        "How does Pioneer report which model actually served a routed request?"
+      ]
+    },
+    {
+      "taskType": "lookup",
+      "n": 4,
+      "recommended": "gpt-5-nano",
+      "support": 0.75,
+      "confident": true,
+      "meanSavingPct": 89.72462536058657,
+      "examples": [
+        "What package installs the Actian JavaScript SDK?",
+        "Which port does the Actian VectorAI gRPC endpoint listen on?"
+      ]
+    },
+    {
+      "taskType": "unknown",
+      "n": 3,
+      "recommended": "claude-haiku-4-5",
+      "support": 1,
+      "confident": true,
+      "meanSavingPct": 57.90787490592398,
+      "examples": [
+        "Why does Guild require a public HTTPS tunnel for local development?",
+        "Give me a recipe for apple pie"
+      ]
+    }
+  ]
+}

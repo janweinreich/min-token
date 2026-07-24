@@ -17,7 +17,9 @@ const CODE_VERBS = [
   "write", "implement", "code", "function", "script", "snippet", "example",
   "class", "method", "refactor", "compile", "typescript", "python", "javascript",
 ];
-const DEBUG_VERBS = ["debug", "fix", "error", "exception", "stack trace", "failing", "broken", "why does", "traceback"];
+// "why does" was here and swallowed explanations: "why does Guild require a
+// tunnel" is not a debugging request. Debug means something is BROKEN.
+const DEBUG_VERBS = ["debug", "fix this", "stack trace", "traceback", "failing", "is broken", "throws an error", "exception"];
 const COMPARE_VERBS = ["difference", "differ", "compare", "versus", " vs ", "better than", "instead of", "tradeoff"];
 const EXPLAIN_VERBS = ["explain", "how does", "why is", "what happens", "describe", "walk me through"];
 
