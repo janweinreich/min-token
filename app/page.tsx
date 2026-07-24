@@ -67,7 +67,29 @@ const MODES = [
   { id: "off" as const, label: "OFF", hint: "keyword router · free" },
   { id: "learned" as const, label: "LEARNED RULES", hint: "distilled table · free" },
   { id: "llm" as const, label: "MODEL READS SKILL", hint: "~625 tok/request" },
+  { id: "train" as const, label: "LEARN FROM THIS", hint: "runs every model · expensive" },
 ];
+
+interface TrainRes {
+  question: string;
+  taskType: string;
+  reference: { model: string; totalTokens: number; costUsd: number };
+  candidates: Array<{
+    model: string; answer: string; totalTokens: number; costUsd: number;
+    acceptable?: boolean; verdict?: string;
+  }>;
+  winner: string | null;
+  saving: { tokens: number; costUsd: number; pct: number } | null;
+  trainingSetSize: number;
+  rules: Array<{ taskType: string; recommended: string; n: number; support: number; confident: boolean }>;
+  promptUpdated: boolean;
+  untilResynth: number;
+  resynthEvery: number;
+  prompt: string;
+  trainingCostUsd: number;
+  trainingTokens: number;
+  error?: string;
+}
 
 const usd = (n: number) => (n >= 0.01 ? `$${n.toFixed(3)}` : `$${n.toFixed(5)}`);
 
@@ -77,7 +99,9 @@ export default function Page() {
   const [log, setLog] = useState<Array<{ q: string; r: Res }>>([]);
   const [skill, setSkill] = useState<string | null>(null);
   const [showDetail, setShowDetail] = useState(false);
-  const [routerMode, setRouterMode] = useState<"off" | "learned" | "llm">("off");
+  const [routerMode, setRouterMode] = useState<"off" | "learned" | "llm" | "train">("off");
+  const [train, setTrain] = useState<TrainRes | null>(null);
+  const [showPrompt, setShowPrompt] = useState(false);
   const [status, setStatus] = useState<Partial<Res> | null>(null);
 
   useEffect(() => {
@@ -92,6 +116,25 @@ export default function Page() {
     if (!question.trim() || busy) return;
     setBusy(true);
     setQ("");
+
+    // Training mode runs the whole distillation on this one question instead of
+    // answering it cheaply. Different endpoint, different panel.
+    if (routerMode === "train") {
+      try {
+        const res = await fetch("/api/train", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ question }),
+        });
+        const t = (await res.json()) as TrainRes;
+        setTrain(t);
+        fetch("/api/status").then((r) => r.json()).then(setStatus).catch(() => {});
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
     try {
       const res = await fetch("/api/ask", {
         method: "POST",
@@ -188,6 +231,96 @@ export default function Page() {
 
         {/* ── the number that matters ────────────────────────── */}
         <aside className="panel">
+          {routerMode === "train" && (
+            <>
+              <h2>Learning from this question</h2>
+              {busy && <p className="dim">running every model, then judging each answer…</p>}
+              {!busy && !train && <p className="dim">Ask a question and every model will answer it.</p>}
+              {train?.error && <p className="warn">{train.error}</p>}
+              {train && !train.error && (
+                <>
+                  <div className="ladder">
+                    <div className="lrow ref">
+                      <span className="lm">{train.reference.model}</span>
+                      <span className="lb">REFERENCE</span>
+                      <span className="lt">{train.reference.totalTokens} tok · {usd(train.reference.costUsd)}</span>
+                    </div>
+                    {train.candidates.map((c) => (
+                      <div
+                        key={c.model}
+                        className={
+                          c.model === train.winner ? "lrow win" : c.acceptable ? "lrow ok" : "lrow bad"
+                        }
+                      >
+                        <span className="lm">{c.model}</span>
+                        <span className="lb">
+                          {c.model === train.winner ? "CHOSEN" : c.acceptable ? "good enough" : "rejected"}
+                        </span>
+                        <span className="lt">{c.totalTokens} tok · {usd(c.costUsd)}</span>
+                        <p className="lv">{c.verdict}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className={train.winner ? "saveband" : "saveband none"}>
+                    {train.winner ? (
+                      <>
+                        <b>{train.winner}</b> matched the reference for{" "}
+                        <b>{usd(train.saving?.costUsd ?? 0)}</b> less
+                        <span className="pct">{Math.round(train.saving?.pct ?? 0)}%</span>
+                      </>
+                    ) : (
+                      <>no cheaper model was good enough — this class stays at the reference</>
+                    )}
+                  </div>
+
+                  <p className="basis">
+                    Judged by <b>{train.reference.model}</b>, one candidate at a time, without being told
+                    which model produced it. This lesson cost {train.trainingTokens} tokens
+                    ({usd(train.trainingCostUsd)}) — training is what you pay once so serving is cheap.
+                  </p>
+
+                  <h2>Training data</h2>
+                  <p className="tiny">
+                    <b className="good">+1</b> example → <b>{train.trainingSetSize}</b> total ·{" "}
+                    class <code>{train.taskType}</code>
+                  </p>
+                  <table>
+                    <thead><tr><th>class</th><th>n</th><th>use</th><th>accepted</th></tr></thead>
+                    <tbody>
+                      {train.rules.map((r) => (
+                        <tr key={r.taskType}>
+                          <td>{r.taskType}</td>
+                          <td>{r.n}</td>
+                          <td className={r.confident ? "good" : "dim"}>{r.recommended}</td>
+                          <td>{(r.support * 100).toFixed(0)}%{r.confident ? "" : " (thin)"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  <h2>Router prompt</h2>
+                  {train.promptUpdated ? (
+                    <div className="saveband">
+                      <b>rewritten</b> by {train.reference.model} from all {train.trainingSetSize} examples
+                    </div>
+                  ) : (
+                    <p className="tiny dim">
+                      unchanged — rewritten every {train.resynthEvery} examples, {train.untilResynth} to go.
+                      Re-synthesizing per question would be a synthesis call to restate the same conclusion.
+                    </p>
+                  )}
+                  <button className="disclose" onClick={() => setShowPrompt(!showPrompt)}>
+                    {showPrompt ? "hide" : "show"} the prompt the model wrote
+                  </button>
+                  {showPrompt && <pre className="skill">{train.prompt}</pre>}
+                </>
+              )}
+            </>
+          )}
+
+          {routerMode !== "train" && (
+          <>
           <h2>This request</h2>
           {sv ? (
             <>
@@ -359,6 +492,8 @@ export default function Page() {
               </p>
               {skill !== null && <pre className="skill">{skill}</pre>}
             </div>
+          )}
+          </>
           )}
         </aside>
       </div>

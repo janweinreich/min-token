@@ -278,6 +278,21 @@ async function distilledRules(): Promise<ClassRule[] | null> {
 }
 
 async function routerCall(modelId: string, system: string, user: string, maxOut: number) {
+  // Retry once. A transient provider blip on the ROUTER silently degrades every
+  // routed request to the fallback model, which on stage reads as "the learned
+  // router does not work" — the failure is invisible except as a worse choice.
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await routerCallOnce(modelId, system, user, maxOut);
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr;
+}
+
+async function routerCallOnce(modelId: string, system: string, user: string, maxOut: number) {
   const base = process.env.PIONEER_BASE_URL ?? "https://api.pioneer.ai/v1";
   const res = await fetch(`${base}/messages`, {
     method: "POST",

@@ -1,0 +1,44 @@
+- main [ref=f3e2]:
+  - generic [ref=f3e3]:
+    - generic [ref=f3e4]: BudgetDarwin — the cheapest model that still answers well
+    - generic [ref=f3e5]: 0 learned rules
+    - generic [ref=f3e6]: 0 episodes
+  - generic [ref=f3e7]:
+    - generic [ref=f3e8]:
+      - generic [ref=f3e9]:
+        - paragraph [ref=f3e10]: "Ask these three in order:"
+        - list [ref=f3e11]:
+          - listitem [ref=f3e12]: a question → generates
+          - listitem [ref=f3e13]: a paraphrase → replays at 0 tokens
+          - listitem [ref=f3e14]: the Python variant → refuses to replay
+      - generic [ref=f3e15]:
+        - textbox "ask anything…" [ref=f3e16]
+        - button "ask" [disabled] [ref=f3e17]
+      - generic [ref=f3e18]:
+        - generic [ref=f3e19]:
+          - text: TRAINING MODE
+          - generic [ref=f3e20]: "OFF"
+        - button [ref=f3e21] [cursor=pointer]:
+          - text: "OFF"
+          - emphasis [ref=f3e22]: keyword router · free
+        - button [ref=f3e23] [cursor=pointer]:
+          - text: LEARNED RULES
+          - emphasis [ref=f3e24]: distilled table · free
+        - button [ref=f3e25] [cursor=pointer]:
+          - text: MODEL READS SKILL
+          - emphasis [ref=f3e26]: ~625 tok/request
+        - button [ref=f3e27] [cursor=pointer]:
+          - text: LEARN FROM THIS
+          - emphasis [ref=f3e28]: runs every model · expensive
+      - generic [ref=f3e29]:
+        - button "What package installs the Actian JavaScrip…" [ref=f3e30] [cursor=pointer]
+        - button "Which npm package do I need for Actian Vec…" [ref=f3e31] [cursor=pointer]
+        - button "How do I install the Actian Python SDK?" [ref=f3e32] [cursor=pointer]
+    - complementary [ref=f3e33]:
+      - heading "This request" [level=2] [ref=f3e34]
+      - paragraph [ref=f3e35]: Ask something to see the comparison.
+      - heading "This session" [level=2] [ref=f3e36]
+      - paragraph [ref=f3e37]: —
+      - heading "How it saved" [level=2] [ref=f3e38]
+      - paragraph [ref=f3e39]: —
+      - button "show the evidence" [ref=f3e40] [cursor=pointer]

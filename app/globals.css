@@ -337,3 +337,33 @@ button.mode em {
 button.mode.on { background: #2e1065; border-color: #a78bfa; color: #f5f3ff; }
 button.mode.on em { color: #c4b5fd; }
 button.mode:disabled { opacity: 0.5; cursor: default; }
+
+/* ── live training: the ladder of answers and the judge's verdicts ── */
+.ladder { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.lrow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  background: #131c2e;
+  font-size: 11.5px;
+}
+.lrow .lm { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #e2e8f0; font-weight: 600; }
+.lrow .lb {
+  grid-column: 2; grid-row: 1;
+  font-size: 9px; letter-spacing: 0.07em; font-weight: 700;
+  color: #64748b; align-self: center;
+}
+.lrow .lt { grid-column: 1 / -1; font-size: 10px; color: #64748b; }
+.lrow .lv { grid-column: 1 / -1; margin: 3px 0 0; font-size: 10.5px; line-height: 1.4; color: #94a3b8; }
+
+.lrow.ref { border-color: #475569; background: #1a2437; }
+.lrow.ref .lb { color: #cbd5e1; }
+.lrow.win { border-color: #22c55e; background: #052e1a; }
+.lrow.win .lm, .lrow.win .lb { color: #4ade80; }
+.lrow.ok { border-color: #334155; }
+.lrow.ok .lb { color: #7dd3fc; }
+.lrow.bad { opacity: 0.62; }
+.lrow.bad .lb { color: #f59e0b; }

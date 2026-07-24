@@ -120,6 +120,7 @@ export async function routeWithLlm(
       model: fallbackModel,
       reason: `router unavailable (${String(e).slice(0, 40)})`,
       source: "fallback",
+      promptSource: synthesizedPrompt?.trim() ? "synthesized" : "builtin",
       inputTokens: 0,
       outputTokens: 0,
       costUsd: 0,
