@@ -59,19 +59,17 @@ Lookup runs **before** Pioneer. Hits show in the Memory hits metric and event lo
 
 ---
 
-## Missing keys checklist
+## Missing keys / live blockers
 
-Copy from your other hackathon `.env` if you have it.
-
-| Variable | Needed for |
+| Variable | Status to check |
 |---|---|
-| `PIONEER_API_KEY` | Live inference (else offline answers) |
-| `PIONEER_MODEL_CHEAP` / `_MID` / `_PREMIUM` | Real tier split (else defaults) |
+| `PIONEER_API_KEY` | Required for live inference. A **403** means the key is present but inference is not enabled (billing/plan) — app fail-softs to local answers. |
+| `PIONEER_MODEL_CHEAP` / `_MID` / `_PREMIUM` | Optional overrides; defaults exist |
 | `SENSO_API_KEY` | Live truth search |
-| `GUILD_API_KEY` + `GUILD_WORKSPACE_ID` | Live Guild sessions |
-| `GUILD_POLICY_AGENT_ID` (+ version) | Optional; falls back to organizer ids |
+| `GUILD_API_KEY` + `GUILD_WORKSPACE_ID` | Live Guild sessions (also publish a policy A/B agent if you want live traces) |
+| `GUILD_POLICY_AGENT_ID` (+ version) | Optional |
 | `BAND_TOM_API_KEY` or `BAND_AGENT_API_KEY` | Live Band announce |
-| `BAND_PUBLIC_CHAT_ID` | Stable ops chat (else creates one) |
+| `BAND_PUBLIC_CHAT_ID` | Stable ops chat |
 | `REPLAY_API_KEY` | LoopQA MCP only |
 
 After Replay QA on the public URL, `POST /api/darwin` `{ "action": "mark-replay" }` lights the Replay chip.
