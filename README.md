@@ -63,7 +63,7 @@ Lookup runs **before** Pioneer. Hits show in the Memory hits metric and event lo
 
 | Variable | Status to check |
 |---|---|
-| `PIONEER_API_KEY` | Required for live inference. A **403** means the key is present but inference is not enabled (billing/plan) — app fail-softs to local answers. |
+| `PIONEER_API_KEY` | Required for live inference. Billing must be active (card on file). A **404** about “no inference provider” means the model id is listed but not routable — use the defaults in `.env.example`. |
 | `PIONEER_MODEL_CHEAP` / `_MID` / `_PREMIUM` | Optional overrides; defaults exist |
 | `SENSO_API_KEY` | Live truth search |
 | `GUILD_API_KEY` + `GUILD_WORKSPACE_ID` | Live Guild sessions (also publish a policy A/B agent if you want live traces) |

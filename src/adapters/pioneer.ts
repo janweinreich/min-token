@@ -20,7 +20,8 @@ const TIER_COST: Record<
 > = {
   cheap: {
     modelEnv: "PIONEER_MODEL_CHEAP",
-    fallbackModel: "meta-llama/Llama-3.2-3B-Instruct",
+    // Llama-3.2-3B is listed in /models but has no inference provider.
+    fallbackModel: "gpt-4.1-nano",
     input: 0.05,
     output: 0.15,
   },
@@ -32,8 +33,7 @@ const TIER_COST: Record<
   },
   premium: {
     modelEnv: "PIONEER_MODEL_PREMIUM",
-    fallbackModel:
-      process.env.PIONEER_MODEL ?? "meta-llama/Llama-3.1-70B-Instruct",
+    fallbackModel: process.env.PIONEER_MODEL ?? "claude-haiku-4-5",
     input: 0.8,
     output: 2.4,
   },
