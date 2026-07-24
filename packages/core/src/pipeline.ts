@@ -7,13 +7,16 @@
  * provably zero-generation. See pipeline.test.ts.
  */
 import { randomUUID } from "node:crypto";
+import { extractFeatures } from "./features.js";
 import type {
   Embedder,
   GenerateResult,
   InferenceProvider,
   KnowledgeRetriever,
+  RouteAlias,
   VectorStore,
 } from "./ports.js";
+import type { RoutingPolicy } from "./policy.js";
 import {
   buildEmbeddingText,
   evaluateReplay,
@@ -22,6 +25,7 @@ import {
   type MemoryRecord,
   type ReplayPolicy,
 } from "./replay-guard.js";
+import { chooseRoute, type RouteDecision, type RoutingEpisode } from "./router.js";
 
 export const ANSWER_MEMORY = "answer_memory_v1";
 
@@ -63,15 +67,25 @@ export interface MemoryDecision {
   rejections: Array<{ memoryId: string; reasons: string[] }>;
 }
 
+export type PipelineRoute =
+  | "EXACT_REPLAY"
+  | "SEMANTIC_REPLAY"
+  | "LEAN_RAG"
+  | "STRONG_RAG"
+  | "AUTO_CODE"
+  | "ABSTAIN";
+
 export interface AskResponse {
   runId: string;
   answer: string;
   citations: Citation[];
-  route: "EXACT_REPLAY" | "SEMANTIC_REPLAY" | "GENERATED";
+  route: PipelineRoute;
   selectedModelId?: string;
   providerRequestId?: string;
   usage: Usage;
   memory: MemoryDecision;
+  /** Why the router chose what it chose — rendered in the trace. */
+  routing?: RouteDecision;
   latencyMs: number;
 }
 
@@ -82,9 +96,23 @@ export interface PipelineDeps {
   policy: ReplayPolicy;
   activeSnapshotId: string;
   now?: () => Date;
-  /** Optional: when present, generation is grounded in retrieved context. */
   knowledge?: KnowledgeRetriever;
-  /** Evidence budget. These are the knobs the evolution loop actually moves. */
+  /** When present, the router selects the route. Without it, everything is lean. */
+  routingPolicy?: RoutingPolicy;
+  /** Past episodes feeding the per-task-class lean success estimate. */
+  episodes?: RoutingEpisode[];
+  benchmarkMode?: boolean;
+  /**
+   * Override the router for a bootstrap probe.
+   *
+   * The history gate is an absorbing state: lean stays closed until it has a
+   * track record, a track record only accrues by taking lean, and exploration is
+   * hard-off in benchmark mode to preserve determinism. So the benchmark can
+   * never discover on its own that the cheap route works. This forces the route
+   * so the outcome can be MEASURED per task class and seeded as honest history.
+   */
+  forceRoute?: "LEAN_RAG" | "STRONG_RAG" | "AUTO_CODE";
+  /** Explicit overrides, used by tests. The routing policy wins when present. */
   contextK?: number;
   maxCharsPerChunk?: number;
   maxOutputTokens?: number;
@@ -132,7 +160,6 @@ export async function ask(deps: PipelineDeps, input: AskInput): Promise<AskRespo
   const [maskedVec] = await deps.embeddings.embedBatch([maskedText]);
   embeds++;
 
-  // Pre-filter in the store, not in JS: tenant + snapshot + language + status.
   const hits = await deps.vectors.search(ANSWER_MEMORY, maskedVec!, {
     limit: 3,
     filter: {
@@ -145,7 +172,7 @@ export async function ask(deps: PipelineDeps, input: AskInput): Promise<AskRespo
     },
   });
 
-  let decision: MemoryDecision = { hit: false, rejections: [] };
+  let rejections: Array<{ memoryId: string; reasons: string[] }> = [];
 
   if (hits.length > 0) {
     // Unmasked re-score as a nonsense floor. Masking collapses question SHAPE, so
@@ -193,23 +220,75 @@ export async function ask(deps: PipelineDeps, input: AskInput): Promise<AskRespo
         latencyMs: Date.now() - t0,
       };
     }
-    decision = { hit: false, rejections: verdict.rejections };
+    rejections = verdict.rejections;
   }
 
-  // ── Generation path ────────────────────────────────────────────────────────
+  // ── Retrieval ──────────────────────────────────────────────────────────────
+  // Retrieve at the WIDER budget so the router can observe cross-source
+  // structure, then send only what the chosen route pays for. Retrieving at the
+  // lean budget would make crossSourceGap unmeasurable — it could never see a
+  // second source.
+  const maxChars = deps.maxCharsPerChunk ?? deps.routingPolicy?.maxCharsPerChunk ?? 1200;
+  const retrieveK = Math.max(deps.routingPolicy?.strongContextK ?? 4, deps.contextK ?? 2);
+  const retrieved = deps.knowledge
+    ? await deps.knowledge.searchContext({ query: input.question, maxResults: retrieveK })
+    : [];
+
+  // ── Route selection. Deterministic; no model decides which model to call. ──
+  let routing = deps.routingPolicy
+    ? chooseRoute(extractFeatures(input.question, retrieved), deps.routingPolicy, deps.episodes ?? [], {
+        benchmarkMode: deps.benchmarkMode ?? true,
+      })
+    : undefined;
+
+  if (deps.forceRoute && routing) {
+    const p = deps.routingPolicy!;
+    const lean = deps.forceRoute === "LEAN_RAG";
+    routing = {
+      ...routing,
+      route: deps.forceRoute,
+      reasons: [`forced:${deps.forceRoute}`, ...routing.reasons],
+      contextK: lean ? p.leanContextK : p.strongContextK,
+      maxOutputTokens: lean ? p.leanMaxOutputTokens : p.strongMaxOutputTokens,
+    };
+  }
+
+  const memory: MemoryDecision = { hit: false, rejections };
+
+  if (routing?.route === "ABSTAIN") {
+    // Abstention is a real outcome, not an error. It costs zero generation
+    // tokens, which is exactly why the scorer treats abstaining on an answerable
+    // question as a critical failure rather than a cheap win.
+    return {
+      runId,
+      answer:
+        "The verified corpus does not contain enough evidence to answer this question. " +
+        "Rather than guess, I am declining to answer.",
+      citations: [],
+      route: "ABSTAIN",
+      usage: ZERO_USAGE(embeds),
+      memory,
+      routing,
+      latencyMs: Date.now() - t0,
+    };
+  }
+
+  const contextK = routing?.contextK ?? deps.contextK ?? 2;
+  const chunks = retrieved.slice(0, contextK);
+  const alias: RouteAlias =
+    routing?.route === "AUTO_CODE" ? "auto-code" : routing?.route === "STRONG_RAG" ? "strong" : "lean";
+  const routeLabel: PipelineRoute =
+    routing?.route === "AUTO_CODE" ? "AUTO_CODE" : routing?.route === "STRONG_RAG" ? "STRONG_RAG" : "LEAN_RAG";
+
+  // ── Generation ─────────────────────────────────────────────────────────────
   // NOTE: rejected candidates are deliberately NOT injected into the prompt. A
   // memory refused for Python whose answer says `npm install ...` would simply be
   // copied by the model, reopening the exact failure the guard exists to prevent.
-  const contextK = deps.contextK ?? 2;
-  const maxChars = deps.maxCharsPerChunk ?? 1200;
-  const chunks = deps.knowledge
-    ? await deps.knowledge.searchContext({ query: input.question, maxResults: contextK })
-    : [];
-
+  //
   // Truncation is where `maxCharsPerChunk` turns into real tokens. Input is ~82%
-  // of the budget, so this is the highest-leverage number the policy carries.
+  // of the budget, so it is the highest-leverage number the policy carries.
   const evidence = chunks
-    .map((c, i) => `[${c.contentId}] ${c.title}\n${c.text.slice(0, maxChars)}`)
+    .map((c) => `[${c.contentId}] ${c.title}\n${c.text.slice(0, maxChars)}`)
     .join("\n\n");
 
   const citations: Citation[] = chunks.map((c) => ({
@@ -219,7 +298,7 @@ export async function ask(deps: PipelineDeps, input: AskInput): Promise<AskRespo
   }));
 
   const result = await deps.inference.generate({
-    alias: "lean",
+    alias,
     system: {
       // Stable prefix first so it is cacheable; evidence and question after.
       stable:
@@ -229,7 +308,7 @@ export async function ask(deps: PipelineDeps, input: AskInput): Promise<AskRespo
       volatile: evidence ? `Sources:\n\n${evidence}` : undefined,
     },
     user: input.question,
-    maxOutputTokens: deps.maxOutputTokens ?? 400,
+    maxOutputTokens: routing?.maxOutputTokens ?? deps.maxOutputTokens ?? 400,
     requestId: runId,
   });
 
@@ -237,11 +316,12 @@ export async function ask(deps: PipelineDeps, input: AskInput): Promise<AskRespo
     runId,
     answer: result.text,
     citations,
-    route: "GENERATED",
+    route: routeLabel,
     selectedModelId: result.selectedModelId,
     providerRequestId: result.providerRequestId,
     usage: usageFrom(result, embeds),
-    memory: decision,
+    memory,
+    routing,
     latencyMs: Date.now() - t0,
   };
 }

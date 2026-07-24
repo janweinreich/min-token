@@ -1,6 +1,6 @@
-# Routing Skill v6
+# Routing Skill v1
 
-> Generated 2026-07-24T19:06:40.000Z from policy v6. **Do not edit by hand** — this file is recompiled on every policy promotion, and every rule below is derived from a policy parameter or from measured routing episodes.
+> Generated 2026-07-24T19:06:40.000Z from policy v1. **Do not edit by hand** — this file is recompiled on every policy promotion, and every rule below is derived from a policy parameter or from measured routing episodes.
 
 ## Goal
 
@@ -16,23 +16,17 @@ Apply in order. The first rule that matches wins.
 4. **Lean route** if all hold: question ≤ 240 chars, not temporal, no action intent, top evidence ≥ 0.45, cross-source gap ≥ 0.06, and the lean success lower bound ≥ 0.6. Send 2 chunks, ≤ 160 output tokens.
 5. **Otherwise the strong route.** 4 chunks, ≤ 320 output tokens.
 
-Chunks are truncated to 700 characters. This is the highest-leverage number here: input is roughly 82% of the token budget, so evidence volume dominates cost far more than output caps do.
+Chunks are truncated to 1200 characters. This is the highest-leverage number here: input is roughly 82% of the token budget, so evidence volume dominates cost far more than output caps do.
 
 ## What I have learned from traffic
 
 | task class | n | lean tried | clean wins | success (lower bound) | mean tokens lean → strong | routing |
 |---|---:|---:|---:|---:|---:|---|
-| code | 5 | 0 | 0 | 0.00 | – → 1400 | _gathering evidence_ |
-| comparison | 18 | 11 | 0 | 0.00 | 980 → 1210 | **skip lean** — go straight to strong |
-| lookup | 26 | 22 | 22 | 0.81 | 420 → 1150 | **use lean** |
+| comparison | 9 | 3 | 1 | 0.08 | – → – | **skip lean** — go straight to strong |
+| explanation | 13 | 1 | 1 | 0.14 | – → – | _gathering evidence_ |
+| lookup | 78 | 40 | 40 | 0.88 | – → – | **use lean** |
 
 Routing **comparison** straight to the strong model avoids the retry tax: a lean attempt that fails and escalates costs more than starting strong, because the repair reuses the larger context.
-
-## What changed in this version
-
-- `maxCharsPerChunk`: 800 → 700
-
-Verified on the held-out set: generation tokens 5780 → 5280 (−8.7%), quality 0.940 → 0.940, critical failures 0.
 
 ## Rules that are not negotiable
 

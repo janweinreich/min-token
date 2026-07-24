@@ -14,6 +14,7 @@ import {
   type MemoryRecord,
 } from "./replay-guard.js";
 import type { GenerateRequest, InferenceProvider } from "./ports.js";
+import { DEFAULT_POLICY } from "./policy.js";
 
 const SNAPSHOT = "sponsor-docs-v1";
 const TENANT = "demo";
@@ -161,7 +162,7 @@ describe("Gate A — unsafe near-matches fall through to generation", () => {
       question: "How do I install the Actian Python SDK?",
       tenantId: TENANT,
     });
-    expect(r.route).toBe("GENERATED");
+    expect(r.route).toBe("LEAN_RAG");
     expect(generate).toHaveBeenCalledOnce();
     const reasons = r.memory.rejections.flatMap((x) => x.reasons).join(",");
     expect(reasons).toMatch(/ecosystem_conflict|uncovered_language/);
@@ -199,7 +200,7 @@ describe("tenant and snapshot isolation", () => {
       question: "How do I install the Actian JavaScript SDK?",
       tenantId: "someone-else",
     });
-    expect(r.route).toBe("GENERATED");
+    expect(r.route).toBe("LEAN_RAG");
   });
 
   it("does not replay when the active snapshot has moved on", async () => {
@@ -209,7 +210,7 @@ describe("tenant and snapshot isolation", () => {
       question: "How do I install the Actian JavaScript SDK?",
       tenantId: TENANT,
     });
-    expect(r.route).toBe("GENERATED");
+    expect(r.route).toBe("LEAN_RAG");
   });
 });
 
@@ -235,6 +236,94 @@ function spyGen2() {
   };
   return { provider };
 }
+
+describe("the router actually selects the model", () => {
+  const chunk = (id: string, score: number, text: string) => ({
+    contentId: id, versionId: "v1", title: id, chunkIndex: 0, text, score,
+  });
+  const knowledge = {
+    info: { name: "knowledge" as const, mode: "local" as const, label: "stub" },
+    async health() { return { ok: true, latencyMs: 0 }; },
+    async listContents() { return []; },
+    async searchContext() {
+      return [chunk("a", 0.9, "npm install @actian/vectorai-client"), chunk("b", 0.4, "other")];
+    },
+  };
+
+  const spy = () => {
+    const generate = vi.fn(async (_r: GenerateRequest) => ({
+      text: "answer", modelAlias: "lean" as const, inputTokens: 10, cacheReadTokens: 0,
+      cacheWriteTokens: 0, outputTokens: 5, latencyMs: 1, fromCache: false,
+      usageSource: "provider" as const,
+    }));
+    return {
+      generate,
+      provider: {
+        info: { name: "inference" as const, mode: "live" as const, label: "spy" },
+        async health() { return { ok: true, latencyMs: 0 }; },
+        generate,
+      } satisfies InferenceProvider,
+    };
+  };
+
+  async function routed(question: string, over: Partial<PipelineDeps> = {}) {
+    const { provider, generate } = spy();
+    const r = await ask(
+      { ...(await deps(provider)), knowledge, routingPolicy: DEFAULT_POLICY, benchmarkMode: true, ...over },
+      { question, tenantId: "routing-tenant" },
+    );
+    return { r, sent: generate.mock.calls[0]?.[0] };
+  }
+
+  it("sends a coding question to the code alias, not lean", async () => {
+    const { r, sent } = await routed("Write a TypeScript function that queries Actian and returns the hits.");
+    expect(r.route).toBe("AUTO_CODE");
+    expect(sent!.alias).toBe("auto-code");
+  });
+
+  it("falls back to strong when lean has not earned its history", async () => {
+    // No episodes -> the pessimistic prior keeps the cheap route closed.
+    const { r, sent } = await routed("What package installs the Actian JavaScript SDK?");
+    expect(r.route).toBe("STRONG_RAG");
+    expect(sent!.alias).toBe("strong");
+    expect(r.routing!.leanSuccessLCB).toBeLessThan(DEFAULT_POLICY.leanMinHistoricalSuccess);
+  });
+
+  it("takes the lean route once that task class has earned it", async () => {
+    const earned = Array.from({ length: 30 }, () => ({
+      similarity: 1, route: "LEAN_RAG" as const, passed: true, repaired: false, taskType: "lookup",
+    }));
+    const { r, sent } = await routed("What package installs the Actian JavaScript SDK?", { episodes: earned });
+    expect(r.route).toBe("LEAN_RAG");
+    expect(sent!.alias).toBe("lean");
+  });
+
+  it("history is scoped per task class — a failing class must not close another", async () => {
+    const mixed = [
+      ...Array.from({ length: 30 }, () => ({ similarity: 1, route: "LEAN_RAG" as const, passed: true, repaired: false, taskType: "lookup" })),
+      ...Array.from({ length: 30 }, () => ({ similarity: 1, route: "LEAN_RAG" as const, passed: false, repaired: true, taskType: "comparison" })),
+    ];
+    const { r } = await routed("What package installs the Actian JavaScript SDK?", { episodes: mixed });
+    expect(r.route).toBe("LEAN_RAG"); // lookups unaffected by comparison failures
+  });
+
+  it("the route controls the output budget the provider is given", async () => {
+    const { sent } = await routed("Write a TypeScript function to query Actian.");
+    expect(sent!.maxOutputTokens).toBe(DEFAULT_POLICY.strongMaxOutputTokens);
+  });
+
+  it("abstains without calling any model when evidence is absent", async () => {
+    const empty = { ...knowledge, async searchContext() { return [chunk("a", 0.02, "unrelated text")]; } };
+    const { provider, generate } = spy();
+    const r = await ask(
+      { ...(await deps(provider)), knowledge: empty, routingPolicy: DEFAULT_POLICY, benchmarkMode: true },
+      { question: "What is the airspeed velocity of an unladen swallow?", tenantId: "routing-tenant" },
+    );
+    expect(r.route).toBe("ABSTAIN");
+    expect(generate).not.toHaveBeenCalled();
+    expect(r.usage.totalGenerationTokens).toBe(0);
+  });
+});
 
 describe("embedding geometry", () => {
   it("write-time and read-time embedding text are identical for the same question", async () => {
