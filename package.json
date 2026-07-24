@@ -1,19 +1,28 @@
 {
-  "name": "budget-darwin",
+  "name": "budgetdarwin",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@9.15.4",
   "scripts": {
-    "calibrate": "tsx scripts/calibrate.ts",
-    "doctor": "tsx scripts/doctor.ts",
-    "bench": "tsx scripts/bench.ts",
-    "evolve": "tsx scripts/evolve.ts",
-    "test": "vitest run"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "replay-safety": "tsx scripts/replay-safety.ts",
+    "savings": "tsx scripts/measure-savings.ts",
+    "evolve": "tsx scripts/evolve-live.ts",
+    "smoke": "tsx scripts/smoke-inference.ts",
+    "calibrate": "tsx scripts/spike-embed.ts"
   },
   "dependencies": {
-    "@huggingface/transformers": "4.2.0"
+    "@huggingface/transformers": "4.2.0",
+    "next": "15",
+    "react": "19",
+    "react-dom": "19"
   },
   "devDependencies": {
+    "@types/react": "19.2.17",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^3.2.6"
