@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BudgetDarwin (`min-token`)
 
-## Getting Started
+tokens& Self-Evolving Agents Hackathon — Jul 24, 2026 · SF  
+Repo: https://github.com/janweinreich/min-token
 
-First, run the development server:
+Routes each question across Pioneer **cheap / mid / premium**, scores against Senso ground truth, promotes cheaper policies with Guild, announces on Band, and **reuses prior answers from memory** so repeat questions cost $0 compute.
+
+**Goal:** quality ≥ 90% · cut batch cost ≥ 40% vs always-premium.
+
+Plan: [WIN_PLAN.md](./WIN_PLAN.md) · Model: [docs/MODEL.md](./docs/MODEL.md) · Sponsors: [docs/SPONSORS.md](./docs/SPONSORS.md)
+
+---
+
+## Run
 
 ```bash
+cp .env.example .env
+# fill keys (see Missing keys below)
+
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Deploy:** connect this GitHub repo to Vercel (root = repo root). Set the same env vars in the Vercel project.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Demo clicks
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Run generation** — measures always-premium baseline, then runs a challenger with memory on.
+2. Watch **Saved vs premium** and **Memory hits**.
+3. On Guild **promote**, open **Routing policy** and the Guild trace link in the log.
+4. Turn **Autopilot** on for unattended loops.
+5. **Answer memory** JSON: `/api/darwin?view=memory`
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Sponsors
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Tool | Job |
+|---|---|
+| Pioneer | Tiered inference + $ estimate |
+| Senso | Ground-truth context + policy citeable |
+| Guild | A/B promote / reject with session trace |
+| Band | Ops announce on promote |
+| Replay | QA the deployed UI (mark via API after pass) |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Fail-soft: missing keys still run the demo with local answers / local Guild decisions / cached Band.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Answer memory
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Stored prompts → solutions live in:
+
+- seed: [`src/data/answer-memory.seed.json`](src/data/answer-memory.seed.json)
+- runtime: `src/data/answer-memory.runtime.json` (gitignored; in-memory on Vercel warm instances)
+
+Lookup runs **before** Pioneer. Hits show in the Memory hits metric and event log (`source: memory`).
+
+---
+
+## Missing keys checklist
+
+Copy from your other hackathon `.env` if you have it.
+
+| Variable | Needed for |
+|---|---|
+| `PIONEER_API_KEY` | Live inference (else offline answers) |
+| `PIONEER_MODEL_CHEAP` / `_MID` / `_PREMIUM` | Real tier split (else defaults) |
+| `SENSO_API_KEY` | Live truth search |
+| `GUILD_API_KEY` + `GUILD_WORKSPACE_ID` | Live Guild sessions |
+| `GUILD_POLICY_AGENT_ID` (+ version) | Optional; falls back to organizer ids |
+| `BAND_TOM_API_KEY` or `BAND_AGENT_API_KEY` | Live Band announce |
+| `BAND_PUBLIC_CHAT_ID` | Stable ops chat (else creates one) |
+| `REPLAY_API_KEY` | LoopQA MCP only |
+
+After Replay QA on the public URL, `POST /api/darwin` `{ "action": "mark-replay" }` lights the Replay chip.
+
+---
+
+## Submit
+
+1. Public GitHub (this repo)
+2. Working Vercel URL
+3. 3-minute demo video
+4. Tools used: Pioneer, Senso, Guild, Band, Replay
